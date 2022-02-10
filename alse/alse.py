@@ -1,6 +1,6 @@
 import numpy as np
 from gpytorch.likelihoods import DirichletClassificationLikelihood
-from gp_model import DirichletGPModel
+from alse.gp_model import DirichletGPModel
 import math
 import torch
 import numpy as np
@@ -11,11 +11,11 @@ class Alse():
 
     def __init__(self, data_x, data_y, d1, d2):
 
-    self.train_x = data_x
-    self.train_y = data_y
-    self.test_x_mat, self.test_y_mat = np.meshgrid(d1, d2)
-    self.test_x_mat, self.test_y_mat = torch.Tensor(self.test_x_mat), torch.Tensor(self.test_y_mat)
-    self.test_x = torch.cat((self.test_x_mat.view(-1,1), self.test_y_mat.view(-1,1)), dim=1)
+        self.train_x = data_x
+        self.train_y = data_y
+        self.test_x_mat, self.test_y_mat = np.meshgrid(d1, d2)
+        self.test_x_mat, self.test_y_mat = torch.Tensor(self.test_x_mat), torch.Tensor(self.test_y_mat)
+        self.test_x = torch.cat((self.test_x_mat.view(-1,1), self.test_y_mat.view(-1,1)), dim=1)
 
     def run(self):
         return
@@ -48,6 +48,5 @@ class Alse():
     def find_next_step(self):
         return
     
-
     def hpo(self):
         return

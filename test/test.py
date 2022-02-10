@@ -1,4 +1,4 @@
-from alse import Alse
+from alse.alse import Alse
 import math
 import torch
 import numpy as np
@@ -10,7 +10,6 @@ def gen_data(num_data, seed = 2022):
 
     x = torch.randn(num_data,1)
     y = torch.randn(num_data,1)
-
     u = torch.rand(1)
     data_fn = lambda x, y: 1 * torch.sin(0.15 * u * 3.1415 * (x + y)) + 1
     latent_fn = data_fn(x, y)

@@ -22,7 +22,7 @@ class DirichletGPModel(ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
-    def hpo(self)
+    def hpo(self):
         # Find optimal model hyperparameters
         training_iter = 50
         self.train()
