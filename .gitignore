@@ -1,2 +1,6 @@
 **/__pycache__/**
 alse.egg-info/**
+*.txt
+*.png
+*.pdf
+*.jpg

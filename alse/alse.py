@@ -16,13 +16,14 @@ class Alse():
         self.test_x_mat, self.test_y_mat = np.meshgrid(d1, d2)
         self.test_x_mat, self.test_y_mat = torch.Tensor(self.test_x_mat), torch.Tensor(self.test_y_mat)
         self.test_x = torch.cat((self.test_x_mat.view(-1,1), self.test_y_mat.view(-1,1)), dim=1)
+        self.init_gp()
 
     def run(self):
         return
 
     def init_gp(self):
         self.likelihood = DirichletClassificationLikelihood(self.train_y, learn_additional_noise=True)
-        self.gp = DirichletGPModel(self.train_x, likelihood.transformed_targets, likelihood, num_classes=likelihood.num_classes)
+        self.gp = DirichletGPModel(self.train_x, self.likelihood.transformed_targets, self.likelihood, num_classes=self.likelihood.num_classes)
         return
     
     def predict(self):
@@ -31,7 +32,7 @@ class Alse():
         with gpytorch.settings.fast_pred_var(), torch.no_grad():
             test_dist = self.gp(self.test_x)
             self.pred_means = test_dist.loc
-        self.plot_prediction()
+        self.plot_predictions()
     
     def plot_predictions(self):
         fig, ax = plt.subplots(1, 3, figsize = (15, 5))
@@ -41,6 +42,7 @@ class Alse():
             )
             fig.colorbar(im, ax=ax[i])
             ax[i].set_title("Logits: Class " + str(i), fontsize = 20)
+        plt.savefig('test.png')
 
     def acquisition(self):
         return
