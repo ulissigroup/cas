@@ -109,7 +109,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
                 # print("Before test dist")
                 # print(f"self.model::::::: {self.model.posterior()[0]}")
                 # test_dist = self.model.posterior(points)
-                test_dist = model(points[i].float()) # Calculate posterior
+                test_dist = self.model.models[0](points[i].float()) # Calculate posterior
                 # print("Before pred_means")
                 pred_means = test_dist.loc
             pred_samples = test_dist.sample(torch.Size((50,))).exp()

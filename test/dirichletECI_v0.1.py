@@ -23,7 +23,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import random
-
+from alse.gp_model import DirichletGPModel
+from alse.eci import ExpectedCoverageImprovement
+from gpytorch.models import ExactGP
+from gpytorch.likelihoods import DirichletClassificationLikelihood
+from gpytorch.means import ConstantMean
+from gpytorch.kernels import ScaleKernel, RBFKernel
+from botorch.models.gpytorch import BatchedMultiOutputGPyTorchModel
 
 SMOKE_TEST = os.environ.get("SMOKE_TEST")
 # def f(x1, x2): return (x1**2+x2-11)**2+(x1+x2**2-7)**2
@@ -44,117 +50,7 @@ tkwargs = {
     # "dtype": torch.float,
 }
 
-class ExpectedCoverageImprovement(MCAcquisitionFunction):
-    def __init__(
-        self,
-        model,
-        constraints,
-        punchout_radius,
-        bounds,
-        num_samples=512,
-        **kwargs,
-    ):
-        """Expected Coverage Improvement (q=1 required, analytic)
 
-        Right now, we assume that all the models in the ModelListGP have
-        the same training inputs.
-
-        Args:
-            model: A ModelListGP object containing models matching the corresponding constraints.
-                All models are assumed to have the same training data.
-            constraints: List containing 2-tuples with (direction, value), e.g.,
-                [('gt', 3), ('lt', 4)]. It is necessary that
-                len(constraints) == model.num_outputs.
-            punchout_radius: Positive value defining the desired minimum distance between points
-            bounds: torch.tensor whose first row is the lower bounds and second row is the upper bounds
-            num_samples: Number of samples for MC integration
-        """
-        super().__init__(model=model, objective=IdentityMCObjective(), **kwargs)
-        assert len(constraints) == model.num_outputs
-        assert all(direction in ("gt", "lt") for direction, _ in constraints)
-        assert punchout_radius > 0
-        self.constraints = constraints
-        self.punchout_radius = punchout_radius
-        self.bounds = bounds
-        self.base_points = self.train_inputs
-        self.ball_of_points = self._generate_ball_of_points(
-            num_samples=num_samples,
-            radius=punchout_radius,
-            device=bounds.device,
-            dtype=bounds.dtype,
-        )
-        self._thresholds = torch.tensor(
-            [threshold for _, threshold in self.constraints]
-        ).to(bounds)
-        assert (
-            all(ub > lb for lb, ub in self.bounds.T) and len(self.bounds.T) == self.dim
-        )
-
-    @property
-    def num_outputs(self):
-        return self.model.num_outputs
-
-    @property
-    def dim(self):
-        return self.train_inputs.shape[-1]
-
-    @property
-    def train_inputs(self):
-        return self.model.models[0].train_inputs[0]
-
-    def _generate_ball_of_points(
-        self, num_samples, radius, device=None, dtype=torch.double
-    ):
-        """Creates a ball of points to be used for MC."""
-        tkwargs = {"device": device, "dtype": dtype}
-        z = sample_hypersphere(d=self.dim, n=num_samples, qmc=True, **tkwargs) # Not using self.dim
-        r = torch.rand(num_samples, 1, **tkwargs) ** (1 / self.dim)
-        
-        return radius * r * z
-
-    def _get_base_point_mask(self, X):
-        distance_matrix = self.model.models[0].covar_module.base_kernel.covar_dist(
-            X, self.base_points.double()
-        )   # Note to self: self.base_points is fp32
-            # Should standardize all to fp64?
-        return smooth_mask(distance_matrix, self.punchout_radius)
-
-    def _estimate_probabilities_of_satisfaction_at_points(self, points):
-        print("Entered estimate prob")
-        probabilities = torch.zeros((points.shape[0:2]))
-        for i in range(len(points)):
-            with gpytorch.settings.fast_pred_var(), torch.no_grad():
-                # print("Before test dist")
-                # print(f"self.model::::::: {self.model.posterior()[0]}")
-                # test_dist = self.model.posterior(points)
-                test_dist = model(points[i].float()) # Calculate posterior
-                # print("Before pred_means")
-                pred_means = test_dist.loc
-            pred_samples = test_dist.sample(torch.Size((50,))).exp()
-            prob_of_one_point = (pred_samples / pred_samples.sum(-2, keepdim=True))[:,1,:].mean(0)
-            probabilities[i] = prob_of_one_point
-        return probabilities
-
-    @t_batch_mode_transform(expected_q=1)
-    def forward(self, X):
-        """Evaluate Expected Improvement on the candidate set X."""
-        ball_around_X = self.ball_of_points + X
-        domain_mask = smooth_mask(
-            ball_around_X, self.bounds[0, :], self.bounds[1, :]
-        ).prod(dim=-1)
-        # print(f"domain mask: {domain_mask.shape}")
-        num_points_in_integral = domain_mask.sum(dim=-1)
-        # print(f"num_points_in_integral: {num_points_in_integral.shape}")
-        # print("Right before base_point_mask")
-        # print(f"ball dtype: {ball_around_X.dtype}")
-        # print(f"ball shape: {ball_around_X.shape}")
-        base_point_mask = self._get_base_point_mask(ball_around_X).prod(dim=-1)
-        # print(f"base_point_mask: {base_point_mask.shape}")
-        prob = self._estimate_probabilities_of_satisfaction_at_points(ball_around_X)
-        # print(f"prob: {prob.shape}")
-        masked_prob = prob * domain_mask * base_point_mask
-        y = masked_prob.sum(dim=-1) / num_points_in_integral
-        return y
 
 def get_and_fit_gp(X, Y):
     # Find optimal model hyperparameters
@@ -211,16 +107,10 @@ lb, ub = bounds
 dim = len(lb)
 punchout_radius = 0.6
 
-# num_init_points = 5
-# num_total_points = 20 
-# X = lb + (ub - lb) * SobolEngine(dim, scramble=True).draw(num_init_points).to(**tkwargs)
-# Y = yf(X)
-# plt.scatter(X.cpu().numpy()[:, 0], X.cpu().numpy()[:, 1], c=Y.cpu()[:,0])
 
 
 num_init_points = 10
 num_total_points = 15 
-# X = lb + (ub - lb) * SobolEngine(dim, scramble=True).draw(num_init_points).to(**tkwargs)
 def get_first_N_points(num):
     with open("../data/trainx.txt","r") as x:
         data = eval(x.read())
@@ -237,32 +127,16 @@ X = X.double()
 Y = Y.unsqueeze(-1).repeat(1,2).double()
 
 
-from gpytorch.models import ExactGP
-from gpytorch.likelihoods import DirichletClassificationLikelihood
-from gpytorch.means import ConstantMean
-from gpytorch.kernels import ScaleKernel, RBFKernel
-from botorch.models.gpytorch import BatchedMultiOutputGPyTorchModel
+
 
 # We will use the simplest form of GP model, exact inference
-class DirichletGPModel(ExactGP):
-    def __init__(self, train_x, train_y, likelihood, num_classes):
-        super(DirichletGPModel, self).__init__(train_x, train_y, likelihood)
-        self.mean_module = ConstantMean(batch_shape=torch.Size((num_classes,)))
-        self.covar_module = ScaleKernel(
-            RBFKernel(batch_shape=torch.Size((num_classes,))),
-            batch_shape=torch.Size((num_classes,)),
-        )
 
-    def forward(self, x):
-        mean_x = self.mean_module(x)
-        covar_x = self.covar_module(x)
-        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 # initialize likelihood and model
 # we let the DirichletClassificationLikelihood compute the targets for us
 X = X.float()
-likelihood = DirichletClassificationLikelihood(Y[:,0].long(), learn_additional_noise=True)
-model = DirichletGPModel(X, likelihood.transformed_targets, likelihood, num_classes=likelihood.num_classes)
+# likelihood = DirichletClassificationLikelihood(Y[:,0].long(), learn_additional_noise=True)
+# model = DirichletGPModel(X, likelihood.transformed_targets, likelihood, num_classes=likelihood.num_classes)
 
 
 constraints = [("lt", 1.01), ("gt", 0.95)]
@@ -289,8 +163,8 @@ while len(X) < num_total_points:
     )
     print("Checkpoint: x_next")
     # Switch to eval mode
-    model.eval()
-    likelihood.eval()
+    model_list_gp.models[0].eval()
+    # likelihood.eval()
     x_next, _ = optimize_acqf(
         acq_function=eci,
         bounds=bounds,
