@@ -1,9 +1,7 @@
 import os
-
 import gpytorch
 from botorch.models.gpytorch import BatchedMultiOutputGPyTorchModel
 from botorch.models.utils import multioutput_to_batch_mode_transform
-
 import matplotlib.pyplot as plt
 import torch
 from botorch.acquisition.monte_carlo import MCAcquisitionFunction
@@ -18,21 +16,23 @@ from gpytorch.constraints import Interval
 from gpytorch.likelihoods import GaussianLikelihood
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from torch.quasirandom import SobolEngine
+from alse.utils import smooth_mask, smooth_box_mask
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import random
+
+
 SMOKE_TEST = os.environ.get("SMOKE_TEST")
-# def f(x1, x2): return np.sin(x1+x2)+(x1-x2)**2-1.5*x1+2.5*x2+1
-def f(x1, x2): return (x1**2+x2-11)**2+(x1+x2**2-7)**2
-x1 = np.linspace(-3, 3)
-x2 = np.linspace(-3, 3)
-X1, X2 = np.meshgrid(x1, x2)
-# F = f(x1, x2) + random.random()
-plt.contour(X1, X2, f(X1, X2)+random.random(), cmap = 'viridis')
-cbar = plt.colorbar()
+# def f(x1, x2): return (x1**2+x2-11)**2+(x1+x2**2-7)**2
+
+# x1 = np.linspace(-3, 3)
+# x2 = np.linspace(-3, 3)
+# X1, X2 = np.meshgrid(x1, x2)
+# plt.contour(X1, X2, f(X1, X2)+random.random(), cmap = 'viridis')
+# cbar = plt.colorbar()
 
 torch.cuda.is_available()
 
@@ -43,16 +43,6 @@ tkwargs = {
     "dtype": torch.double,
     # "dtype": torch.float,
 }
-
-
-def smooth_mask(x, a, eps=2e-3):
-    """Returns 0ish for x < a and 1ish for x > a"""
-    return torch.nn.Sigmoid()((x - a) / eps)
-
-
-def smooth_box_mask(x, a, b, eps=2e-3):
-    """Returns 1ish for a < x < b and 0ish otherwise"""
-    return smooth_mask(x, a, eps) - smooth_mask(x, b, eps)
 
 class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
@@ -241,14 +231,10 @@ def get_first_N_points(num):
     return train_x, train_y
 
 
-X, Y = get_first_N_points(10)
+X, Y = get_first_N_points(num_init_points)
 
 X = X.double()
 Y = Y.unsqueeze(-1).repeat(1,2).double()
-# print(Y)
-# print(Y.shape)
-# Y = yf(X)
-plt.scatter(X.numpy()[:, 0], X.numpy()[:, 1], c=Y[:,0])
 
 
 from gpytorch.models import ExactGP
@@ -374,12 +360,12 @@ ax.plot(
     X[~feasible_inds, 0].cpu(), X[~feasible_inds, 1].cpu(), "sr", label="Infeasible"
 )
 # ax.scatter(X[:5, 0], X[:5, 1], marker = 'o', s=100, color = 'k')
-ax.scatter(X.cpu()[:10, 0], X.cpu()[:10, 1], marker = 'o', s=100, color = 'k')
+ax.scatter(X.cpu()[:num_init_points, 0], X.cpu()[:num_init_points, 1], marker = 'o', s=100, color = 'k')
 ind = 1
-for i in X[10:]:
+for i in X[num_init_points:]:
     plt.text(i[0],i[1],ind, size = 15)
     ind += 1
-ax.legend(loc=[0.7, 0.05])
+ax.legend()
 ax.set_title("$f_1(x)$")  # Recall that f1(x) = f2(x)
 ax.set_xlabel("$x_1$")
 ax.set_ylabel("$x_2$")
