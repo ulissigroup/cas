@@ -222,10 +222,10 @@ num_init_points = 10
 num_total_points = 15 
 # X = lb + (ub - lb) * SobolEngine(dim, scramble=True).draw(num_init_points).to(**tkwargs)
 def get_first_N_points(num):
-    with open("./trainx.txt","r") as x:
+    with open("../data/trainx.txt","r") as x:
         data = eval(x.read())
     train_x = torch.tensor(data)[0:num,:]
-    with open("./trainy.txt","r") as y:
+    with open("../data/trainy.txt","r") as y:
         data = eval(y.read())
     train_y = torch.tensor(data)[0:num]
     return train_x, train_y
