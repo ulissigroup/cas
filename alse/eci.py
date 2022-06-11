@@ -82,7 +82,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
 
     @property
     def train_inputs(self):
-        return self.model.models[0].train_inputs[0]
+        return self.model.train_inputs[0]
 
     def _generate_ball_of_points(
         self, num_samples, radius, device=None, dtype=torch.double
@@ -95,7 +95,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         return radius * r * z
 
     def _get_base_point_mask(self, X):
-        distance_matrix = self.model.models[0].covar_module.base_kernel.covar_dist(
+        distance_matrix = self.model.covar_module.base_kernel.covar_dist(
             X, self.base_points.double()
         )   # Note to self: self.base_points is fp32
             # Should standardize all to fp64?
@@ -106,10 +106,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         probabilities = torch.zeros((points.shape[0:2]))
         for i in range(len(points)):
             with gpytorch.settings.fast_pred_var(), torch.no_grad():
-                # print("Before test dist")
-                # print(f"self.model::::::: {self.model.posterior()[0]}")
-                # test_dist = self.model.posterior(points)
-                test_dist = self.model.models[0](points[i].float()) # Calculate posterior
+                test_dist = self.model(points[i].float()) # Calculate posterior
                 # print("Before pred_means")
                 pred_means = test_dist.loc
             pred_samples = test_dist.sample(torch.Size((50,))).exp()

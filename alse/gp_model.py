@@ -33,6 +33,7 @@ class DirichletGPModel(ExactGP):
             RBFKernel(batch_shape=torch.Size((num_classes,))),
             batch_shape=torch.Size((num_classes,)),
         )
+        self.num_outputs = num_classes
 
     def forward(self, x):
         mean_x = self.mean_module(x)
