@@ -146,7 +146,6 @@ while len(X) < num_total_points:
     X = torch.cat((X, x_next))
     Y = torch.cat((Y, y_next))
 
-
 N1, N2 = 50, 50
 Xplt, Yplt = torch.meshgrid(
     torch.linspace(-3, 3, N1, **tkwargs), torch.linspace(-3, 3, N2, **tkwargs)
@@ -178,9 +177,9 @@ def identify_samples_which_satisfy_constraints(X):
     return successful
 
 
-fig, ax = plt.subplots(figsize=(8, 6))
+fig, (ax, ax1) = plt.subplots(1, 2, figsize=(18, 6))
 h1 = ax.contourf(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), 20, cmap="Blues", alpha=0.6)
-fig.colorbar(h1)
+fig.colorbar(h1, ax = ax)
 ax.contour(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), [-10, 0], colors="k")
 
 feasible_inds = (
@@ -201,13 +200,24 @@ ax.scatter(
 
 ind = 1
 for i in X[num_init_points:]:
-    plt.text(i[0], i[1], ind, size=15)
+    ax.text(i[0], i[1], ind, size=15)
     ind += 1
 ax.legend()
 ax.set_title("$f_1(x)$")  # Recall that f1(x) = f2(x)
 ax.set_xlabel("$x_1$")
 ax.set_ylabel("$x_2$")
-ax.set_aspect("equal", "box")
-# ax.set_xlim([-0.05, 1.05])
-# ax.set_ylim([-0.05, 1.05])
+# ax.set_aspect("equal", "box")
+
+
+gp_models.eval()
+
+with gpytorch.settings.fast_pred_var(), torch.no_grad():
+    test_dist = gp_models(xplt.float())
+    pred_means = test_dist.loc
+pred_samples = test_dist.sample(torch.Size((256,))).exp()
+probabilities = (pred_samples / pred_samples.sum(-2, keepdim=True)).mean(0)
+ax1.contourf(Xplt.cpu(), Yplt.cpu(), pred_means.max(0)[1].reshape((N1,N2)))
+ax1.set_title("$posterior$") 
+ax1.set_xlabel("$x_1$")
+ax1.set_ylabel("$x_2$")
 plt.savefig("test.png")
