@@ -30,7 +30,6 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
         self,
         model,
-        constraints,
         punchout_radius,
         bounds,
         num_samples=512,
@@ -52,10 +51,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
             num_samples: Number of samples for MC integration
         """
         super().__init__(model=model, objective=IdentityMCObjective(), **kwargs)
-        assert len(constraints) == model.num_outputs
-        assert all(direction in ("gt", "lt") for direction, _ in constraints)
         assert punchout_radius > 0
-        self.constraints = constraints
         self.punchout_radius = punchout_radius
         self.bounds = bounds
         self.base_points = self.train_inputs
@@ -65,9 +61,6 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
             device=bounds.device,
             dtype=bounds.dtype,
         )
-        self._thresholds = torch.tensor(
-            [threshold for _, threshold in self.constraints]
-        ).to(bounds)
         assert (
             all(ub > lb for lb, ub in self.bounds.T) and len(self.bounds.T) == self.dim
         )
