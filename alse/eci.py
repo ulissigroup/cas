@@ -112,16 +112,9 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         domain_mask = smooth_mask(
             ball_around_X, self.bounds[0, :], self.bounds[1, :]
         ).prod(dim=-1)
-        # print(f"domain mask: {domain_mask.shape}")
         num_points_in_integral = domain_mask.sum(dim=-1)
-        # print(f"num_points_in_integral: {num_points_in_integral.shape}")
-        # print("Right before base_point_mask")
-        # print(f"ball dtype: {ball_around_X.dtype}")
-        # print(f"ball shape: {ball_around_X.shape}")
         base_point_mask = self._get_base_point_mask(ball_around_X).prod(dim=-1)
-        # print(f"base_point_mask: {base_point_mask.shape}")
         prob = self._estimate_probabilities_of_satisfaction_at_points(ball_around_X)
-        # print(f"prob: {prob.shape}")
         masked_prob = prob * domain_mask * base_point_mask
         y = masked_prob.sum(dim=-1) / num_points_in_integral
         return y
