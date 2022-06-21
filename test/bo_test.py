@@ -37,7 +37,7 @@ import os
 SMOKE_TEST = os.environ.get("SMOKE_TEST")
 
 tkwargs = {
-    "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    "device": torch.device("cpu"),
     "dtype": torch.double,
     # "dtype": torch.float,
 }
@@ -133,16 +133,17 @@ while len(X) < num_total_points:
     print("Checkpoint: x_next")
     # Switch to eval mode
     gp_models.eval()
+
     x_next, _ = optimize_acqf(
-        acq_function=eci,
-        bounds=bounds,
-        q=1,
-        num_restarts=10,
-        raw_samples=50,
-    )
+            acq_function=eci,
+            bounds=bounds,
+            q=1,
+            num_restarts=10,
+            raw_samples=512,
+        )
     print(f"Got x_next: {x_next}")
     y_next = yf(x_next)
-    print("Checkpoint: finished y_next")
+
     X = torch.cat((X, x_next))
     Y = torch.cat((Y, y_next))
-
+    print("Added new point to training data")

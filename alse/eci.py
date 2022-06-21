@@ -95,17 +95,15 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         return smooth_mask(distance_matrix, self.punchout_radius)
 
     def _estimate_probabilities_of_satisfaction_at_points(self, points):
-        print("Entered estimate prob")
-        probabilities = torch.zeros((points.shape[0:2]))
-        for i in range(len(points)):
-            with gpytorch.settings.fast_pred_var(), torch.no_grad():
-                test_dist = self.model(points[i].float()) # Calculate posterior
-                # print("Before pred_means")
-                pred_means = test_dist.loc
-            pred_samples = test_dist.sample(torch.Size((50,))).exp()
-            prob_of_one_point = (pred_samples / pred_samples.sum(-2, keepdim=True))[:,1,:].mean(0)
-            probabilities[i] = prob_of_one_point
-        return probabilities
+            print("Estimating probabilities")
+            probabilities = torch.zeros((points.shape[0:2]))
+            for i in range(len(points)):
+                with gpytorch.settings.fast_pred_var(), torch.no_grad():
+                    test_dist = self.model(points[i].float())
+                pred_samples = test_dist.sample(torch.Size((50,))).exp()
+                prob_of_one_point = (pred_samples / pred_samples.sum(-2, keepdim=True))[:,1,:].mean(0)
+                probabilities[i] = prob_of_one_point
+            return probabilities
 
     @t_batch_mode_transform(expected_q=1)
     def forward(self, X):
