@@ -42,7 +42,7 @@ def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, u
     fig, (ax, ax1) = plt.subplots(1, 2, figsize=(16, 6))
     h1 = ax.contourf(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), 20, cmap="Blues", alpha=0.6)
     fig.colorbar(h1, ax = ax)
-    ax.contour(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), [-10, 0], colors="k")
+    ax.contour(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), [0, 1], colors="k")
 
     feasible_inds = (
         identify_samples_which_satisfy_constraints(queried_pts_y).prod(dim=-1).to(torch.bool)
@@ -79,7 +79,7 @@ def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, u
     pred_samples = test_dist.sample(torch.Size((256,))).exp()
     probabilities = (pred_samples / pred_samples.sum(-2, keepdim=True)).mean(0)
     ax1.contourf(Xplt.cpu(), Yplt.cpu(), pred_means.max(0)[1].reshape((N1,N2)))
-    ax1.contour(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), [-10, 0], colors="k")
+    ax1.contour(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), [0, 1], colors="k")
 
     ax1.set_title("$posterior$") 
     ax1.set_xlabel("$x_1$")
