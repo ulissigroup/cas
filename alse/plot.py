@@ -6,6 +6,22 @@ import gpytorch
 from PIL import Image
 import glob
 
+
+def identify_samples_which_satisfy_constraints(X):
+    """
+    Takes in values (a1, ..., ak, o) and returns (a1, ..., ak, o)
+    True/False values, where o is the number of outputs.
+    """
+    successful = torch.ones(X.shape).to(X)
+    for model_index in range(X.shape[-1]):
+        these_X = X[..., model_index]
+        # direction, value = constraints[model_index]
+        # successful[..., model_index] = (
+        #     these_X < value if direction == "lt" else these_X > value
+        # )
+        successful[..., model_index] = these_X == 1
+    return successful
+
 def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, ub, tkwargs = None):
 
     N1, N2 = 50, 50
@@ -21,23 +37,6 @@ def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, u
     )
     yplt = yf(xplt)
     Zplt = torch.reshape(yplt[:, 0], (N1, N2))
-
-
-    def identify_samples_which_satisfy_constraints(X):
-        """
-        Takes in values (a1, ..., ak, o) and returns (a1, ..., ak, o)
-        True/False values, where o is the number of outputs.
-        """
-        successful = torch.ones(X.shape).to(X)
-        for model_index in range(X.shape[-1]):
-            these_X = X[..., model_index]
-            # direction, value = constraints[model_index]
-            # successful[..., model_index] = (
-            #     these_X < value if direction == "lt" else these_X > value
-            # )
-            successful[..., model_index] = these_X == 1
-        return successful
-
 
     fig, (ax, ax1) = plt.subplots(1, 2, figsize=(16, 6))
     h1 = ax.contourf(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), 20, cmap="Blues", alpha=0.6)
