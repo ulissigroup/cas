@@ -232,7 +232,7 @@ fig.colorbar(plot2, ax=ax[1], location='right')
 
 
 plot2 = ax[2].contourf(Xplt.cpu(), Yplt.cpu(), Zplt_yf.cpu(), cmap="Blues", alpha=0.6)
-ax[2].contour(Xplt.cpu(), Yplt.cpu(), Zplt_yf.cpu(), [0], colors="k")
+ax[2].contour(Xplt.cpu(), Yplt.cpu(), Zplt_yf.cpu(), colors="k", linewidths=0.3)
 ax[2].scatter(X.cpu()[:5, 0], X.cpu()[:5, 1], marker = 'o', s=100, color = 'k')
 
 ax[2].plot(X[feasible_inds_yf, 0].cpu(), X[feasible_inds_yf, 1].cpu(), "sg", label="Feasible")
