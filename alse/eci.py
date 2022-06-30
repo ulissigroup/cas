@@ -7,7 +7,7 @@ from botorch.utils.transforms import t_batch_mode_transform
 from alse.utils import smooth_mask, smooth_box_mask
 from alse.gp_model import DirichletGPModel
 
-class ExpectedCoverageImprovement_regression(MCAcquisitionFunction):
+class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
         self,
         model,
