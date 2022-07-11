@@ -3,7 +3,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-torch_min = "1.9"
+torch_min = "1.11"
 install_requires = [">=".join(["torch", torch_min]), "scikit-learn", "scipy"]
 setup(
     name="alse",
