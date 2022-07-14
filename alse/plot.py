@@ -1,7 +1,7 @@
 import torch
 from matplotlib import cm
 import matplotlib.pyplot as plt
-from alse.test_function.fxn1 import yf
+from alse.test_function.fxns import yf
 import gpytorch
 from PIL import Image
 import glob

@@ -30,7 +30,7 @@ from gpytorch.kernels import ScaleKernel, RBFKernel
 from botorch.models.gpytorch import BatchedMultiOutputGPyTorchModel
 import random
 import torch
-from alse.test_function.fxn1 import yf
+from alse.test_function.fxns import yf
 from alse.plot import plot_acq_pos_gif
 import os
 
@@ -57,19 +57,12 @@ def get_and_fit_gp(X, Y):
     )
     model.train()
     likelihood.train()
-
     # Use the adam optimizer
     optimizer = torch.optim.Adam(
         model.parameters(), lr=0.1
-    )  # Includes GaussianLikelihood parameters
+    )
 
-    # "Loss" for GPs - the marginal log likelihood
     mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
-
-    """
-    Temporary hack (X.float())
-    need to fix dtype later
-    """
 
     for i in range(50):
         # Zero gradients from previous iteration
@@ -79,12 +72,6 @@ def get_and_fit_gp(X, Y):
         # Calc loss and backprop gradients
         loss = -mll(output, likelihood.transformed_targets).sum()
         loss.backward()
-        # if (i+1) % 5 == 0:
-        #     print('Iter %d/%d - Loss: %.3f   lengthscale: %.3f   noise: %.3f' % (
-        #         i + 1, 50, loss.item(),
-        #         model.covar_module.base_kernel.lengthscale.mean().item(),
-        #         model.likelihood.second_noise_covar.noise.mean().item()
-        #     ))
         optimizer.step()
     return model
 
