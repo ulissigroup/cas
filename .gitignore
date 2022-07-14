@@ -4,3 +4,4 @@ alse.egg-info/**
 *.pdf
 *.jpg
 *.gif
+**/.ipynb_checkpoints/**
