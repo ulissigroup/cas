@@ -34,8 +34,6 @@ def get_and_fit_gp(X, Y):
     """
     assert Y.ndim == 2 and Y.shape[-1] == 1
     likelihood = GaussianLikelihood(noise_constraint=Interval(1e-6, 1e-3))  # Noise-free
-    # octf = Standardize(m=Y.shape[-1])
-    # gp = SingleTaskGP(X, Y, likelihood=likelihood, outcome_transform=octf)
     gp = SingleTaskGP(X, Y, likelihood=likelihood)
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
     fit_gpytorch_model(mll)
@@ -75,20 +73,23 @@ X = lb + (ub - lb) * SobolEngine(dim, scramble=True).draw(num_init_points).to(**
 Yhills = hills(X)
 Ycircle = circle(X)
 Yyf = yf(X)
-gp_model_hills = get_and_fit_gp(X, Yhills[:, :1])
-gp_model_circle = get_and_fit_gp(X, Ycircle[:, :1])
-gp_model_class = get_and_fit_gp_class(X.float(), Yyf[:, 0:1])
+gp_model_hills = get_and_fit_gp(X, Yhills)
+gp_model_circle = get_and_fit_gp(X, Ycircle)
+gp_model_class = get_and_fit_gp_class(X.float(), Yyf)
 model_list_gp = ModelListGP(gp_model_hills, gp_model_circle, gp_model_class)
 
 constraints = [("gt", 0.3), ("gt", 20), ("gt", 0.1)]
-
+# normalization
+# mean = X.mean(dim=-2, keepdim=True)
+# std = X.std(dim=-2, keepdim=True) + 1e-6 # prevent dividing by 0
+# X = (X - mean) / std
 i = 1
 while len(X) < num_total_points:
     # We don't have to normalize X since the domain is [0, 1]^2. Make sure to
     # appropriately adjust the punchout radius if the domain is normalized.
-    gp_model_hills = get_and_fit_gp(X, Yhills[:, :1])
-    gp_model_circle = get_and_fit_gp(X, Ycircle[:, :1])
-    gp_model_class = get_and_fit_gp_class(X.float(), Yyf[:, 0:1])
+    gp_model_hills = get_and_fit_gp(X, Yhills)
+    gp_model_circle = get_and_fit_gp(X, Ycircle)
+    gp_model_class = get_and_fit_gp_class(X.float(), Yyf)
     model_list_gp = ModelListGP(gp_model_hills, gp_model_circle, gp_model_class)
 
     eci = ExpectedCoverageImprovement(
