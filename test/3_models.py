@@ -213,6 +213,16 @@ def plot(gp_model_hills, gp_model_circle, gp_model_class, X, Yhills, Ycircles, Y
         ind += 1
     plt.savefig(f"results/combined_iter_{fig_id:02d}.png")
 
+
+    reward = pos_overlap & true_overlap
+    penalty = pos_overlap & ~true_overlap
+
+    accuracy = float((reward.sum() - penalty.sum())/true_overlap.sum())
+    accuracy = round(accuracy, 4)
+    with open('accuracy.txt', 'a') as f:
+        f.write(f'Accuracy of this run: {accuracy}')
+        f.write('\n')
+
 # normalization
 # mean = X.mean(dim=-2, keepdim=True)
 # std = X.std(dim=-2, keepdim=True) + 1e-6 # prevent dividing by 0
@@ -270,15 +280,9 @@ while len(X) < num_total_points:
     Yyf = torch.cat((Yyf, yf(x_next)))
 
 
-gp_model_hills = get_and_fit_gp(X, Yhills)
-gp_model_circle = get_and_fit_gp(X, Ycircle)
-gp_model_class = get_and_fit_gp_class(X.float(), Yyf)
-model_list_gp = ModelListGP(gp_model_hills, gp_model_circle, gp_model_class)
-plot(gp_model_hills, gp_model_circle, gp_model_class, X, Yhills, Ycircle, Yyf)
+# gp_model_hills = get_and_fit_gp(X, Yhills)
+# gp_model_circle = get_and_fit_gp(X, Ycircle)
+# gp_model_class = get_and_fit_gp_class(X.float(), Yyf)
+# model_list_gp = ModelListGP(gp_model_hills, gp_model_circle, gp_model_class)
+# plot(gp_model_hills, gp_model_circle, gp_model_class, X, Yhills, Ycircle, Yyf)
 
-reward = pos_overlap & true_overlap
-penalty = pos_overlap & ~true_overlap
-
-accuracy = float((reward.sum() - penalty.sum())/true_overlap.sum())
-accuracy = round(accuracy, 4)
-print(f"Accuracy of this run: {accuracy}")
