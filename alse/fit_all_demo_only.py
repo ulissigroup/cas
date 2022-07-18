@@ -3,14 +3,14 @@ from alse.fit_model import fit_gp_class, fit_gp_reg
 import matplotlib as plt
 import numpy as np
 
-def fit_all_models(x, N1, N2, rand_x, rand_y_hills, rand_y_circle, rand_y_class):
-    model_hills = fit_gp_reg(rand_x, rand_y_hills)
-    model_circle = fit_gp_reg(rand_x, rand_y_circle)
-    model_class = fit_gp_class(rand_x, rand_y_class, lr=0.05, iter=300)
+def fit_all_models(x, N1, N2, X, rand_y_hills, rand_y_circle, rand_y_class):
+    model_hills = fit_gp_reg(X, rand_y_hills)
+    model_circle = fit_gp_reg(X, rand_y_circle)
+    model_class = fit_gp_class(X, rand_y_class, lr=0.05, iter=300)
 
     model_class.eval()
     with gpytorch.settings.fast_pred_var(), torch.no_grad():
-        test_dist = model_class(x)
+        test_dist = model_class(x.float())
         pred_means = test_dist.loc #Save this in case we need to switch how we evaluate boundary
 
     pred_samples = test_dist.sample(torch.Size((256,))).exp()
