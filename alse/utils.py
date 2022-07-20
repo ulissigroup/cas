@@ -22,7 +22,7 @@ def identify_samples_which_satisfy_constraints(X, constraints):
     )
     return successful
 
-
+# Store necessary parameters for un_transform
 def store_param(X, num_param):
     xrange_list = torch.zeros(num_param)
     xmin_list = torch.zeros(num_param)
@@ -31,11 +31,13 @@ def store_param(X, num_param):
         xmin_list[i] = X[:,i].min()
     return xrange_list, xmin_list
 
+# Transform each parameter individually to [0, 1]
 def transform(X, num_param):
     for i in range(num_param):
         X[:,i] = (X[:,i]-X[:,i].min())/(X[:,i].max()-X[:,i].min())
     return X
 
+# Undo the transform step
 def un_transform(X, xrange, xmin, num_param):
     for i in range(num_param):
         X[:,i] = X[:,i]*xrange[i] + xmin[i]
