@@ -21,3 +21,22 @@ def identify_samples_which_satisfy_constraints(X, constraints):
         these_X < value if direction == "lt" else these_X > value
     )
     return successful
+
+
+def store_param(X, num_param):
+    xrange_list = torch.zeros(num_param)
+    xmin_list = torch.zeros(num_param)
+    for i in range(num_param):
+        xrange_list[i] = X[:,i].max()-X[:,i].min()
+        xmin_list[i] = X[:,i].min()
+    return xrange_list, xmin_list
+
+def transform(X, num_param):
+    for i in range(num_param):
+        X[:,i] = (X[:,i]-X[:,i].min())/(X[:,i].max()-X[:,i].min())
+    return X
+
+def un_transform(X, xrange, xmin, num_param):
+    for i in range(num_param):
+        X[:,i] = X[:,i]*xrange[i] + xmin[i]
+    return X

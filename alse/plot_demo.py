@@ -1,9 +1,9 @@
 import torch
 from matplotlib import pyplot as plt
 
-def make_meshgrid(N1, N2, tkwargs):
+def make_meshgrid(N1, N2, xrange, yrange, tkwargs):
     Xplt, Yplt = torch.meshgrid(
-    torch.linspace(-3, 3, N1, **tkwargs), torch.linspace(-3, 3, N2, **tkwargs)
+    torch.linspace(xrange[0], xrange[1], N1, **tkwargs), torch.linspace(yrange[0], yrange[1], N2, **tkwargs)
     )
     xplt = torch.stack(
         (
