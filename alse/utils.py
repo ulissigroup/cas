@@ -34,6 +34,7 @@ def store_param(X, num_param):
 # Transform each parameter individually to [0, 1]
 def transform(X, num_param):
     for i in range(num_param):
+        # Linear scaling for each parameter
         X[:,i] = (X[:,i]-X[:,i].min())/(X[:,i].max()-X[:,i].min())
     return X
 
