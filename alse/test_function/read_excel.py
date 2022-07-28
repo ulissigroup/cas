@@ -11,10 +11,9 @@ def read_excel(path):
     path = []
     for i in range(3):
         path.append(input(f"Path to excel No. {i+1}: "))
-    data1 = pandas.read_excel(f'{path[0]}').loc
-    data2 = pandas.read_excel(f'{path[1]}').loc
-    data3 = pandas.read_excel(f'{path[2]}').loc
-    consolidated_data = [data1, data2, data3]
+    consolidated_data = []
+    for i in range(3):
+        consolidated_data.append(pandas.read_excel(f'{path[i]}').loc)    
     #Input parameters
     power = parse_data(consolidated_data, "P (W)")
     velocity = parse_data(consolidated_data, "V (mm/min)")
