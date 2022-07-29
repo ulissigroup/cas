@@ -35,7 +35,7 @@ def read_excel():
     width = parse_data(consolidated_data, "widths avg (mm)").unsqueeze(-1)
     pow_cap = (parse_data(consolidated_data, "powder capt %")/100).unsqueeze(-1)
     _height = parse_data(consolidated_data, "heights avg (mm)").bool().long().unsqueeze(-1)
-    adhere = torch.cat(([_height]*4),-1)
+    adhere = _height
 
     X = torch.stack((power, velocity, spot_size, feed_rate), -1)
     return X, width, pow_cap, adhere
