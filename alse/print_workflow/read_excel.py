@@ -6,11 +6,20 @@ def parse_data(raw_data, param):
         d = torch.cat((d, torch.tensor(raw_data[i][:,f"{param}"])))
     return d
 
-#Right now I am hardcoding 3 excels, we can change that in the future
-def read_excel(path):
-    path = []
-    for i in range(3):
-        path.append(input(f"Path to excel No. {i+1}: "))
+# Right now I am hardcoding 3 excels, we can change that in the future
+def read_excel():
+    ############### Save this section for later ##############
+
+    # path = []
+    # for i in range(3):
+    #     path.append(input(f"Path to excel No. {i+1}: "))
+
+    ############### Save this section for later ##############
+    print("Name for the excel sheets are hardcoded in this version")
+    path1 = "..\\test_data\\4340_2.5mm_5.24gmin.xlsx"
+    path2 = "..\\test_data\\4340_3mm_5.24gmin.xlsx"
+    path3 = "..\\test_data\\4340_3mm_10.47gmin.xlsx"
+    path = [path1, path2, path3]
     consolidated_data = []
     for i in range(3):
         consolidated_data.append(pandas.read_excel(f'{path[i]}').loc)    
@@ -19,7 +28,7 @@ def read_excel(path):
     velocity = parse_data(consolidated_data, "V (mm/min)")
     # Hardcoded
     ones = torch.ones(40)
-    print("Reminder: spot size and feed rate are hardcoded in this version")
+    print("Spot size and feed rate are hardcoded in this version")
     spot_size = torch.cat((ones*2.5, ones*3, ones*3))
     feed_rate = torch.cat((ones*5.24, ones*5.24, ones*10.47))
     #Output parameters
