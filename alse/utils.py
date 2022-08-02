@@ -39,7 +39,7 @@ def transform(X, num_param):
     return X
 
 # Undo the transform step
-def un_transform(X, xrange, xmin, num_param):
+def un_transform(x, xrange, xmin, num_param):
     for i in range(num_param):
-        X[:,i] = X[:,i]*xrange[i] + xmin[i]
-    return X
+        x[:,i] = x[:,i]*xrange[i] + xmin[i]
+    return x
