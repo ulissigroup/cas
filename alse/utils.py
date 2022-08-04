@@ -32,10 +32,10 @@ def store_param(X, num_param):
     return xrange_list, xmin_list
 
 # Transform each parameter individually to [0, 1]
-def transform(X, num_param):
+def transform(X, num_param, bounds):
     for i in range(num_param):
         # Linear scaling for each parameter
-        X[:,i] = (X[:,i]-X[:,i].min())/(X[:,i].max()-X[:,i].min())
+        X[:,i] = (X[:,i]-bounds[i][0])/(bounds[i][1]-bounds[i][0])
     return X
 
 # Undo the transform step

@@ -1,6 +1,6 @@
 import torch
 from botorch.models import ModelListGP
-from botorch.optim import optimize_acqf_mixed
+from botorch.optim import optimize_acqf
 from alse.eci_fixed_feed import ExpectedCoverageImprovement
 from alse.print_workflow.init_model import initialize_models
 
@@ -19,13 +19,13 @@ def one_iter_eci(X, constraints, punchout_radius, bounds, *Y):
     for i in range(len(Y)):
         list_of_models[i].eval()
     print("fixed features")
-    x_next, _ = optimize_acqf_mixed(
+    x_next, _ = optimize_acqf(
         acq_function=eci,
         bounds=bounds,
         q=1,
         num_restarts=10,
         raw_samples=512,
-        fixed_features_list=[{3: 0.5}]
+        # fixed_features_list=[{2: 0, 2: 1, 3: 0.9}]
     )
 
     return torch.cat((X, x_next)), list_of_models
