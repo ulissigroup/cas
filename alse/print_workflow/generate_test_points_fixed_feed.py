@@ -13,5 +13,5 @@ def generate_test_points(X, num_pred, Ytemp, constraints, punchout_radius, bound
         # _compare = (list_of_models[2](X[-1].unsqueeze(0).float()).loc[0] > list_of_models[2](X[-1].unsqueeze(0).float()).loc[1]).long().unsqueeze(0)
         Ytemp[2] = torch.cat((Ytemp[2], list_of_models[2](X[-1].unsqueeze(0)).loc.unsqueeze(-1)))
 
-    return list_of_models, X
+    return X
 
