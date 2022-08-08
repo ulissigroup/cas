@@ -18,8 +18,8 @@ def one_iter_eci(X, constraints, punchout_radius, bounds, *Y):
     )
     for i in range(len(Y)):
         list_of_models[i].eval()
-    print("fixed features")
-    x_next, _ = optimize_acqf(
+
+    x_next, acq_val = optimize_acqf(
         acq_function=eci,
         bounds=bounds,
         q=1,
@@ -27,5 +27,7 @@ def one_iter_eci(X, constraints, punchout_radius, bounds, *Y):
         raw_samples=512,
         # fixed_features_list=[{2: 0, 2: 1, 3: 0.9}]
     )
+    print(f"x_next: {x_next}")
+    print(f"acq_val: {acq_val}")
 
     return torch.cat((X, x_next)), list_of_models

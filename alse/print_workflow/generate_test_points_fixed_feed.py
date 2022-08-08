@@ -14,4 +14,3 @@ def generate_test_points(X, num_pred, Ytemp, constraints, punchout_radius, bound
         Ytemp[2] = torch.cat((Ytemp[2], list_of_models[2](X[-1].unsqueeze(0)).loc.unsqueeze(-1)))
 
     return X
-

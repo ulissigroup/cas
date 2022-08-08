@@ -23,8 +23,8 @@ def read_excel():
     consolidated_data = []
     consolidated_data.append(pandas.read_excel(f'{path[0]}').loc)    
     #Input parameters
-    power = parse_data(consolidated_data, "P")
-    velocity = parse_data(consolidated_data, "V")
+    power = parse_data(consolidated_data, "P (W)")
+    velocity = parse_data(consolidated_data, "V (mm/min)")
     # Hardcoded
     # ones = torch.ones(40)
     # print("Spot size and feed rate are hardcoded in this version")
@@ -33,8 +33,8 @@ def read_excel():
     #Output parameters
     # width = parse_data(consolidated_data, "widths avg (mm)").unsqueeze(-1)
     pow_cap = (parse_data(consolidated_data, "powder_cap")/100).unsqueeze(-1)
-    width = (parse_data(consolidated_data, "width")).unsqueeze(-1)
-    height = (parse_data(consolidated_data, "height")).unsqueeze(-1)
+    width = (parse_data(consolidated_data, "width (mm)")).unsqueeze(-1)
+    height = (parse_data(consolidated_data, "height (mm)")).unsqueeze(-1)
     wth = width/height
     wth = torch.nan_to_num(wth, nan = torch.rand(1).item())
     # _height = parse_data(consolidated_data, "heights avg (mm)").bool().long().unsqueeze(-1)
