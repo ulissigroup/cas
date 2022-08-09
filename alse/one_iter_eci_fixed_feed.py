@@ -8,7 +8,7 @@ def one_iter_eci(X, constraints, punchout_radius, bounds, *Y):
     list_of_models = initialize_models(X, *Y)
     assert len(Y) == len(list_of_models)
     model_list_gp = ModelListGP(*[model for model in list_of_models])
-
+ 
     eci = ExpectedCoverageImprovement(
         model=model_list_gp,
         constraints=constraints,
