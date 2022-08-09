@@ -4,12 +4,12 @@ from botorch.acquisition.monte_carlo import MCAcquisitionFunction
 from botorch.acquisition.objective import IdentityMCObjective
 from botorch.utils.sampling import sample_hypersphere
 from botorch.utils.transforms import t_batch_mode_transform
-from alse.utils import smooth_mask
+from alse.utils import smooth_mask, smooth_box_mask
 
 class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
         self,
-        list_of_model,
+        model,
         constraints,
         punchout_radius,
         bounds,
@@ -22,7 +22,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         the same training inputs.
 
         Args:
-            model: A list of model objects that matching the corresponding constraints.
+            model: A ModelListGP object containing models matching the corresponding constraints.
                 All models are assumed to have the same training data.
             constraints: List containing 2-tuples with (direction, value), e.g.,
                 [('gt', 3), ('lt', 4)]. It is necessary that
@@ -31,8 +31,8 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
             bounds: torch.tensor whose first row is the lower bounds and second row is the upper bounds
             num_samples: Number of samples for MC integration
         """
-        super().__init__(model=list_of_model, objective=IdentityMCObjective(), **kwargs)
-        # assert len(constraints) == model.num_outputs
+        super().__init__(model=model, objective=IdentityMCObjective(), **kwargs)
+        assert len(constraints) == model.num_outputs
         assert all(direction in ("gt", "lt") for direction, _ in constraints)
         assert punchout_radius > 0
         self.constraints = constraints
@@ -54,7 +54,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
 
     @property
     def num_outputs(self):
-        return len(self.list_of_model)
+        return self.model.num_outputs
 
     @property
     def dim(self):
@@ -62,7 +62,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
 
     @property
     def train_inputs(self):
-        return self.list_of_model[0].train_inputs[0]
+        return self.model.models[0].train_inputs[0]
 
     def _generate_ball_of_points(
         self, num_samples, radius, device=None, dtype=torch.double
@@ -74,7 +74,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         return radius * r * z
 
     def _get_base_point_mask(self, X):
-        distance_matrix = self.list_of_model[0].covar_module.base_kernel.covar_dist(
+        distance_matrix = self.model.models[0].covar_module.base_kernel.covar_dist(
             X.double(), self.base_points.double()
         )
         return smooth_mask(distance_matrix, self.punchout_radius)
@@ -82,7 +82,8 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def _estimate_probabilities_of_satisfaction_at_points(self, points):
         """Estimate the probability of satisfying the given constraints."""
         final_prob = torch.ones(points.shape[:-1])
-        for ind, model in enumerate(self.list_of_model):
+        for num in range(len(self.model.models)):
+            model = self.model.models[num]
             if model.model_type == "class":
                 probabilities = torch.ones(points.shape[:-1])
                 for i in range(len(points)):
@@ -98,8 +99,8 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
                 dist = torch.distributions.normal.Normal(mus, sigma2s.sqrt())
                 norm_cdf = dist.cdf(self._thresholds)
                 probs = torch.ones(points.shape[:-1]).to(points)
-                direction, _ = self.constraints[ind]
-                probs = (norm_cdf[..., ind] if direction == "lt" else 1 - norm_cdf[..., ind])
+                direction, _ = self.constraints[num]
+                probs = (norm_cdf[..., num] if direction == "lt" else 1 - norm_cdf[..., num])
                 final_prob = final_prob*probs
         return final_prob
 

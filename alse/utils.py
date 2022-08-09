@@ -1,4 +1,5 @@
 import torch
+import copy
 
 
 def smooth_mask(x, a, eps=2e-3):
@@ -45,10 +46,11 @@ def normalize(x, bounds):
         and d is the number of dimensions
     bounds: torch.tensor whose first row is the lower bounds
         and second row is the upper bounds"""
-    for i in range(x.shape[1]):
+    x_copy = x.clone().detach()
+    for i in range(x_copy.shape[1]):
         # Linear scaling for each parameter
-        x[:, i] = (x[:, i] - bounds[0][i]) / (bounds[1][i] - bounds[0][i])
-    return x
+        x_copy[:, i] = (x_copy[:, i] - bounds[0][i]) / (bounds[1][i] - bounds[0][i])
+    return x_copy
 
 
 # Undo the transform step

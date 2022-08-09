@@ -71,6 +71,6 @@ def fit_gp_model(model_type, X, Y, **kwargs):
             loss = -mll(output, likelihood.transformed_targets).sum()
         else:
             loss = - mll(output, model.train_targets)
-        loss.backward()
+        loss.backward(retain_graph=True)
         optimizer.step()
     return model
