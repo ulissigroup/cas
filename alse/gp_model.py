@@ -9,7 +9,6 @@ from gpytorch.constraints import Interval
 from gpytorch.mlls import ExactMarginalLogLikelihood
 
 
-
 class ClassificationModel(ExactGP):
     def __init__(self, train_x, train_y, likelihood, num_classes):
         super(ClassificationModel, self).__init__(train_x, train_y, likelihood)
@@ -26,8 +25,9 @@ class ClassificationModel(ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
+
 class RegressionModel(SingleTaskGP):
-    def __init__(self,train_x, train_y, likelihood):
+    def __init__(self, train_x, train_y, likelihood):
         super().__init__(train_x, train_y, likelihood)
         self.model_type = "reg"
 
@@ -47,7 +47,7 @@ def fit_gp_model(model_type, X, Y, **kwargs):
     elif model_type == "reg":
         likelihood = GaussianLikelihood(
             noise_constraint=Interval(1e-9, 1e-6)
-        ) # Noise-free
+        )  # Noise-free
         model = RegressionModel(X, Y, likelihood=likelihood)
     else:
         raise TypeError(
@@ -58,19 +58,17 @@ def fit_gp_model(model_type, X, Y, **kwargs):
     model.train()
     likelihood.train()
     # TODO: allow customized optimizer
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=float(kwargs.get('lr',"0.1"))
-    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(kwargs.get("lr", "0.1")))
     mll = ExactMarginalLogLikelihood(likelihood, model)
 
-    for _ in range(int(kwargs.get('num_epoch',"100"))):
+    for _ in range(int(kwargs.get("num_epoch", "100"))):
         optimizer.zero_grad()
         output = model(X)
         # TODO: move this to model initialization step?
         if model_type == "class":
             loss = -mll(output, likelihood.transformed_targets).sum()
         else:
-            loss = - mll(output, model.train_targets)
+            loss = -mll(output, model.train_targets)
         loss.backward(retain_graph=True)
         optimizer.step()
     return model

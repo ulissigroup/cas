@@ -6,6 +6,7 @@ from botorch.utils.sampling import sample_hypersphere
 from botorch.utils.transforms import t_batch_mode_transform
 from alse.utils import smooth_mask, smooth_box_mask
 
+
 class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
         self,
@@ -90,9 +91,11 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
                     with gpytorch.settings.fast_pred_var(), torch.no_grad():
                         test_dist = model(points[i].float())
                     pred_samples = test_dist.sample(torch.Size((50,))).exp()
-                    prob_of_one_point = (pred_samples / pred_samples.sum(-2, keepdim=True))[:,1,:].mean(0)
+                    prob_of_one_point = (
+                        pred_samples / pred_samples.sum(-2, keepdim=True)
+                    )[:, 1, :].mean(0)
                     probabilities[i] = prob_of_one_point
-                final_prob =  final_prob*probabilities
+                final_prob = final_prob * probabilities
             else:
                 posterior = model.posterior(X=points)
                 mus, sigma2s = posterior.mean, posterior.variance
@@ -100,8 +103,10 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
                 norm_cdf = dist.cdf(self._thresholds)
                 probs = torch.ones(points.shape[:-1]).to(points)
                 direction, _ = self.constraints[num]
-                probs = (norm_cdf[..., num] if direction == "lt" else 1 - norm_cdf[..., num])
-                final_prob = final_prob*probs
+                probs = (
+                    norm_cdf[..., num] if direction == "lt" else 1 - norm_cdf[..., num]
+                )
+                final_prob = final_prob * probs
         return final_prob
 
     @t_batch_mode_transform(expected_q=1)

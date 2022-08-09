@@ -22,7 +22,10 @@ def identify_samples_which_satisfy_constraints(X):
         successful[..., model_index] = these_X == 1
     return successful
 
-def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, ub, tkwargs = None):
+
+def plot_acq_pos_gif(
+    model, queried_pts_x, queried_pts_y, num_init_points, lb, ub, tkwargs=None
+):
 
     N1, N2 = 50, 50
     Xplt, Yplt = torch.meshgrid(
@@ -40,15 +43,25 @@ def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, u
 
     fig, (ax, ax1) = plt.subplots(1, 2, figsize=(16, 6))
     h1 = ax.contourf(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), 20, cmap="Blues", alpha=0.6)
-    fig.colorbar(h1, ax = ax)
+    fig.colorbar(h1, ax=ax)
     ax.contour(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), [0, 1], colors="k")
 
     feasible_inds = (
-        identify_samples_which_satisfy_constraints(queried_pts_y).prod(dim=-1).to(torch.bool)
+        identify_samples_which_satisfy_constraints(queried_pts_y)
+        .prod(dim=-1)
+        .to(torch.bool)
     )
-    ax.plot(queried_pts_x[feasible_inds, 0].cpu(), queried_pts_x[feasible_inds, 1].cpu(), "sg", label="Feasible")
     ax.plot(
-        queried_pts_x[~feasible_inds, 0].cpu(), queried_pts_x[~feasible_inds, 1].cpu(), "sr", label="Infeasible"
+        queried_pts_x[feasible_inds, 0].cpu(),
+        queried_pts_x[feasible_inds, 1].cpu(),
+        "sg",
+        label="Feasible",
+    )
+    ax.plot(
+        queried_pts_x[~feasible_inds, 0].cpu(),
+        queried_pts_x[~feasible_inds, 1].cpu(),
+        "sr",
+        label="Infeasible",
     )
     ax.scatter(
         queried_pts_x.cpu()[:num_init_points, 0],
@@ -69,7 +82,6 @@ def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, u
     ax.set_ylabel("$x_2$")
     # ax.set_aspect("equal", "box")
 
-
     model.eval()
 
     with gpytorch.settings.fast_pred_var(), torch.no_grad():
@@ -77,13 +89,13 @@ def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, u
         pred_means = test_dist.loc
     pred_samples = test_dist.sample(torch.Size((256,))).exp()
     probabilities = (pred_samples / pred_samples.sum(-2, keepdim=True)).mean(0)
-    ax1.contourf(Xplt.cpu(), Yplt.cpu(), pred_means.max(0)[1].reshape((N1,N2)))
+    ax1.contourf(Xplt.cpu(), Yplt.cpu(), pred_means.max(0)[1].reshape((N1, N2)))
     ax1.contour(Xplt.cpu(), Yplt.cpu(), Zplt.cpu(), [0, 1], colors="k")
 
-    ax1.set_title("$posterior$") 
+    ax1.set_title("$posterior$")
     ax1.set_xlabel("$x_1$")
     ax1.set_ylabel("$x_2$")
-    fig_id = queried_pts_x.shape[0]-num_init_points
+    fig_id = queried_pts_x.shape[0] - num_init_points
     plt.savefig(f"results/iter_{fig_id:02d}.png")
 
     # Create the frames
@@ -92,9 +104,13 @@ def plot_acq_pos_gif(model, queried_pts_x, queried_pts_y, num_init_points, lb, u
     for i in imgs:
         new_frame = Image.open(i)
         frames.append(new_frame)
-    
+
     # Save into a GIF file that loops forever
-    frames[0].save('results/result.gif', format='GIF',
-                append_images=frames[1:],
-                save_all=True,
-                duration=600, loop=0)
+    frames[0].save(
+        "results/result.gif",
+        format="GIF",
+        append_images=frames[1:],
+        save_all=True,
+        duration=600,
+        loop=0,
+    )
