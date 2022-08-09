@@ -6,7 +6,7 @@ from gpytorch.constraints import Interval
 from botorch.fit import fit_gpytorch_model
 from alse.gp_model import DirichletGPModel
 
-def fit_gp_class(X, Y, lr=0.1, iter=100):
+def fit_gp_class(X, Y, lr=0.05, iter=250):
     try:
         assert X.dtype == torch.float
     except:
