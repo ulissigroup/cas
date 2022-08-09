@@ -7,10 +7,8 @@ from botorch.fit import fit_gpytorch_model
 from alse.gp_model import DirichletGPModel
 
 def fit_gp_class(X, Y, lr=0.05, iter=250):
-    try:
-        assert X.dtype == torch.float
-    except:
-        X = X.float()
+
+    X = X.float()
     # Find optimal model hyperparameters
     likelihood = DirichletClassificationLikelihood(Y[:,0].long(), learn_additional_noise=True)
     model = DirichletGPModel(X, likelihood.transformed_targets, likelihood, num_classes=2)
