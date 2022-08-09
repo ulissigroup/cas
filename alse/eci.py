@@ -4,13 +4,12 @@ from botorch.acquisition.monte_carlo import MCAcquisitionFunction
 from botorch.acquisition.objective import IdentityMCObjective
 from botorch.utils.sampling import sample_hypersphere
 from botorch.utils.transforms import t_batch_mode_transform
-from alse.utils import smooth_mask, smooth_box_mask
-from alse.gp_model import DirichletGPModel
+from alse.utils import smooth_mask
 
 class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
         self,
-        model,
+        list_of_model,
         constraints,
         punchout_radius,
         bounds,
@@ -23,7 +22,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         the same training inputs.
 
         Args:
-            model: A ModelListGP object containing models matching the corresponding constraints.
+            model: A list of model objects that matching the corresponding constraints.
                 All models are assumed to have the same training data.
             constraints: List containing 2-tuples with (direction, value), e.g.,
                 [('gt', 3), ('lt', 4)]. It is necessary that
@@ -32,8 +31,8 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
             bounds: torch.tensor whose first row is the lower bounds and second row is the upper bounds
             num_samples: Number of samples for MC integration
         """
-        super().__init__(model=model, objective=IdentityMCObjective(), **kwargs)
-        assert len(constraints) == model.num_outputs
+        super().__init__(model=list_of_model, objective=IdentityMCObjective(), **kwargs)
+        # assert len(constraints) == model.num_outputs
         assert all(direction in ("gt", "lt") for direction, _ in constraints)
         assert punchout_radius > 0
         self.constraints = constraints
@@ -55,7 +54,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
 
     @property
     def num_outputs(self):
-        return self.model.num_outputs
+        return len(self.list_of_model)
 
     @property
     def dim(self):
@@ -63,7 +62,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
 
     @property
     def train_inputs(self):
-        return self.model.models[0].train_inputs[0]
+        return self.list_of_model[0].train_inputs[0]
 
     def _generate_ball_of_points(
         self, num_samples, radius, device=None, dtype=torch.double
@@ -75,17 +74,16 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         return radius * r * z
 
     def _get_base_point_mask(self, X):
-        distance_matrix = self.model.models[0].covar_module.base_kernel.covar_dist(
-            X, self.base_points
+        distance_matrix = self.list_of_model[0].covar_module.base_kernel.covar_dist(
+            X.double(), self.base_points.double()
         )
         return smooth_mask(distance_matrix, self.punchout_radius)
 
     def _estimate_probabilities_of_satisfaction_at_points(self, points):
         """Estimate the probability of satisfying the given constraints."""
         final_prob = torch.ones(points.shape[:-1])
-        for num in range(len(self.model.models)):
-            model = self.model.models[num]
-            if isinstance(model, DirichletGPModel):
+        for ind, model in enumerate(self.list_of_model):
+            if model.model_type == "class":
                 probabilities = torch.ones(points.shape[:-1])
                 for i in range(len(points)):
                     with gpytorch.settings.fast_pred_var(), torch.no_grad():
@@ -100,8 +98,8 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
                 dist = torch.distributions.normal.Normal(mus, sigma2s.sqrt())
                 norm_cdf = dist.cdf(self._thresholds)
                 probs = torch.ones(points.shape[:-1]).to(points)
-                direction, _ = self.constraints[num]
-                probs = (norm_cdf[..., num] if direction == "lt" else 1 - norm_cdf[..., num])
+                direction, _ = self.constraints[ind]
+                probs = (norm_cdf[..., ind] if direction == "lt" else 1 - norm_cdf[..., ind])
                 final_prob = final_prob*probs
         return final_prob
 
