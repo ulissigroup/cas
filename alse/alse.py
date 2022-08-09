@@ -5,7 +5,7 @@ from gpytorch.constraints import Interval
 from botorch.fit import fit_gpytorch_model
 from alse.gp_model import fit_gp_model
 from alse.eci import ExpectedCoverageImprovement
-from alse.utils import normalize
+from alse.utils import normalize, unnormalize
 from botorch.optim import optimize_acqf
 import copy
 
@@ -102,5 +102,5 @@ class alse:
                     fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
                 )
 
-        print("next batch of test points:", train_x_temp)
-        return train_x_temp[-num_points, :]
+        print("next batch of test points:", unnormalize(train_x_temp[-num_points:], self.x_bounds))
+        return train_x_temp[-num_points:]
