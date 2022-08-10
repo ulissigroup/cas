@@ -72,5 +72,5 @@ class alse:
                 list_of_models_temp.append(
                     fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
                 )
-
-        return unnormalize(train_x_temp[-num_points:], self.x_bounds)
+        self.next_batch_test_point = unnormalize(train_x_temp[-num_points:], self.x_bounds)
+        return self.next_batch_test_point
