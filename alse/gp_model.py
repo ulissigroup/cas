@@ -33,10 +33,7 @@ class RegressionModel(SingleTaskGP):
 
 
 def fit_gp_model(model_type, X, Y, **kwargs):
-    try:
-        assert X.dtype == torch.float
-    except:
-        X = X.float()
+    X = X.float()
     if model_type == "class":
         likelihood = DirichletClassificationLikelihood(
             Y[:, 0].long(), learn_additional_noise=True
