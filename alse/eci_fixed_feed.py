@@ -5,6 +5,7 @@ from botorch.acquisition.objective import IdentityMCObjective
 from botorch.utils.sampling import sample_hypersphere
 from botorch.utils.transforms import t_batch_mode_transform
 from alse.utils import smooth_mask, smooth_box_mask
+from alse.gp_model import DirichletGPModel
 
 
 class ExpectedCoverageImprovement(MCAcquisitionFunction):
@@ -85,7 +86,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         final_prob = torch.ones(points.shape[:-1])
         for num in range(len(self.model.models)):
             model = self.model.models[num]
-            if model.model_type == "class":
+            if isinstance(model, DirichletGPModel):
                 probabilities = torch.ones(points.shape[:-1])
                 for i in range(len(points)):
                     with gpytorch.settings.fast_pred_var(), torch.no_grad():
