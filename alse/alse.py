@@ -39,35 +39,6 @@ class alse:
                     model_type[i], self.normalized_x, self.train_y[i], **kwargs
                 )
             )
-        # return self.list_of_models
-
-    def next_n_test_points(self, X, num_pred, Ytemp):
-        for _ in range(num_pred):
-            X, list_of_models = one_iter_eci(
-                X,
-                self.y_constraints,
-                self.punchout_radius,
-                self.x_bounds,
-                Ytemp[0].detach(),
-                Ytemp[1].detach(),
-                Ytemp[2].detach(),
-            )
-
-            # This part is hardcoded
-            Ytemp[0] = torch.cat(
-                (Ytemp[0], list_of_models[0](X[-1].unsqueeze(0)).loc.unsqueeze(-1))
-            )
-            Ytemp[1] = torch.cat(
-                (Ytemp[1], list_of_models[1](X[-1].unsqueeze(0)).loc.unsqueeze(-1))
-            )
-
-            # This is a mess, I'll clean it up later
-            # _compare = (list_of_models[2](X[-1].unsqueeze(0).float()).loc[0] > list_of_models[2](X[-1].unsqueeze(0).float()).loc[1]).long().unsqueeze(0)
-            Ytemp[2] = torch.cat(
-                (Ytemp[2], list_of_models[2](X[-1].unsqueeze(0)).loc.unsqueeze(-1))
-            )
-
-        return list_of_models, X
 
     def next_test_points(self, num_points):
         normalized_bounds = torch.tensor([[0, 0], [1, 1]], **tkwargs)
