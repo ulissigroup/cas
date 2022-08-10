@@ -102,4 +102,4 @@ class alse:
                     fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
                 )
 
-        return train_x_temp[-num_points:]
+        return unnormalize(train_x_temp[-num_points:], self.x_bounds)
