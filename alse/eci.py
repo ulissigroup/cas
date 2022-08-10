@@ -5,7 +5,7 @@ from botorch.acquisition.objective import IdentityMCObjective
 from botorch.utils.sampling import sample_hypersphere
 from botorch.utils.transforms import t_batch_mode_transform
 from alse.utils import smooth_mask, smooth_box_mask
-from alse.gp_model import DirichletGPModel
+
 
 class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
@@ -76,7 +76,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
 
     def _get_base_point_mask(self, X):
         distance_matrix = self.model.models[0].covar_module.base_kernel.covar_dist(
-            X, self.base_points
+            X.float(), self.base_points.float()
         )
         return smooth_mask(distance_matrix, self.punchout_radius)
 
@@ -85,15 +85,17 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         final_prob = torch.ones(points.shape[:-1])
         for num in range(len(self.model.models)):
             model = self.model.models[num]
-            if isinstance(model, DirichletGPModel):
+            if model.model_type == "class":
                 probabilities = torch.ones(points.shape[:-1])
                 for i in range(len(points)):
                     with gpytorch.settings.fast_pred_var(), torch.no_grad():
                         test_dist = model(points[i].float())
                     pred_samples = test_dist.sample(torch.Size((50,))).exp()
-                    prob_of_one_point = (pred_samples / pred_samples.sum(-2, keepdim=True))[:,1,:].mean(0)
+                    prob_of_one_point = (
+                        pred_samples / pred_samples.sum(-2, keepdim=True)
+                    )[:, 1, :].mean(0)
                     probabilities[i] = prob_of_one_point
-                final_prob =  final_prob*probabilities
+                final_prob = final_prob * probabilities
             else:
                 posterior = model.posterior(X=points)
                 mus, sigma2s = posterior.mean, posterior.variance
@@ -101,8 +103,10 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
                 norm_cdf = dist.cdf(self._thresholds)
                 probs = torch.ones(points.shape[:-1]).to(points)
                 direction, _ = self.constraints[num]
-                probs = (norm_cdf[..., num] if direction == "lt" else 1 - norm_cdf[..., num])
-                final_prob = final_prob*probs
+                probs = (
+                    norm_cdf[..., num] if direction == "lt" else 1 - norm_cdf[..., num]
+                )
+                final_prob = final_prob * probs
         return final_prob
 
     @t_batch_mode_transform(expected_q=1)
