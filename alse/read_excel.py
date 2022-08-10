@@ -1,19 +1,21 @@
 import torch, pandas
 
 
-def read_excel(file_path):
-
-    consolidated_data = pandas.read_excel(f"{file_path}").loc
+def read_excel(file_path, x_names, y_names):
+                                                        # NaN to 0
+    consolidated_data = pandas.read_excel(f"{file_path}").fillna(0).loc
     # Input parameters
-    power = torch.tensor(consolidated_data[:, "P (W)"])
-    velocity = torch.tensor(consolidated_data[:, "V (mm/min)"])
+    input_param = []
+    for xname in x_names:
+        input_param.append(torch.tensor(consolidated_data[:, f"{xname}"]))
 
     # Output parameters
-    pow_cap = (torch.tensor(consolidated_data[:, "powder_cap"]) / 100).unsqueeze(-1)
-    width = (torch.tensor(consolidated_data[:, "width (mm)"])).unsqueeze(-1)
-    height = (torch.tensor(consolidated_data[:, "height (mm)"])).unsqueeze(-1)
-    wth = width / height
-    wth = torch.nan_to_num(wth, nan=torch.rand(1).item())
+    output_param = []
+    for yname in y_names:
+        output_param.append((torch.tensor((consolidated_data[:, f"{yname}"]))).unsqueeze(-1))
 
-    X = torch.stack((power, velocity), -1)
-    return X, width, pow_cap, wth
+    X = torch.stack(tuple(input_param), -1)
+    return X, *output_param
+
+X, pow_cap, width = read_excel(file_path="/home/jovyan/shared-scratch/leo/alse/test_data/trial.xlsx",x_names=["P (W)", "V (mm/min)"], y_names=["powder capt %", "wth"])
+
