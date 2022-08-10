@@ -102,5 +102,8 @@ class alse:
                     fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
                 )
 
-        print("next batch of test points:", unnormalize(train_x_temp[-num_points:], self.x_bounds))
+        print(
+            "next batch of test points:",
+            unnormalize(train_x_temp[-num_points:], self.x_bounds),
+        )
         return train_x_temp[-num_points:]
