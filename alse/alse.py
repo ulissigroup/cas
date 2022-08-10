@@ -8,6 +8,7 @@ from alse.eci import ExpectedCoverageImprovement
 from alse.utils import normalize, unnormalize
 from botorch.optim import optimize_acqf
 import copy
+from botorch.sampling.samplers import SobolQMCNormalSampler
 
 tkwargs = {
     "device": torch.device("cpu"),
@@ -79,13 +80,21 @@ class alse:
             )
             list_of_models_temp = []
             train_x_temp = torch.cat((train_x_temp, x_next))
+            
             for i in range(len(self.model_type)):
-                y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
-
-                train_y_temp[i] = torch.cat((train_y_temp[i], y_on_x_next))
+                sampler = SobolQMCNormalSampler(512) # This number somehow affects the
+                                                     # number of samples in optimize_acqf
+                # Add fantasy models to list
                 list_of_models_temp.append(
-                    fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
+                    model_list.models[i].fantasize(train_x_temp, sampler)
                 )
+
+                # y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
+
+                # train_y_temp[i] = torch.cat((train_y_temp[i], y_on_x_next))
+                # list_of_models_temp.append(
+                #     fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
+                # )
         self.next_batch_test_point = unnormalize(train_x_temp[-num_points:], self.x_bounds)
         return self.next_batch_test_point
     
