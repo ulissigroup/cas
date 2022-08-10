@@ -19,7 +19,7 @@ def read_excel(file_path):
 
     X = torch.stack((power, velocity), -1)
     return X, width, pow_cap, wth
-    
+
 def smooth_mask(x, a, eps=2e-3):
     """Returns 0ish for x < a and 1ish for x > a"""
     return torch.nn.Sigmoid()((x - a) / eps)
@@ -67,6 +67,7 @@ def unnormalize(x, bounds):
         and d is the number of dimensions
     bounds: torch.tensor whose first row is the lower bounds
         and second row is the upper bounds"""
-    for i in range(x.shape[1]):
-        x[:, i] = x[:, i] * (bounds[1][i] - bounds[0][i]) + bounds[0][i]
-    return x
+    x_copy = x.clone().detach()
+    for i in range(x_copy.shape[1]):
+        x_copy[:, i] = x_copy[:, i] * (bounds[1][i] - bounds[0][i]) + bounds[0][i]
+    return x_copy
