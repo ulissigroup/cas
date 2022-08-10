@@ -40,6 +40,20 @@ class alse:
                 )
             )
 
+    def grid(self):
+        a, b = torch.meshgrid(
+            torch.linspace(0, 1, 10), torch.linspace(0, 1, 10),
+            indexing='xy',
+        )
+        c = torch.stack(
+            (
+                torch.reshape(a, (a.shape[0] * a.shape[1],)),
+                torch.reshape(b, (b.shape[0] * b.shape[1],)),
+            ),
+            dim=1,
+        )
+        return c.unsqueeze(1)
+
     def next_test_points(self, num_points):
         normalized_bounds = torch.tensor([[0, 0], [1, 1]], **tkwargs)
         list_of_models_temp = self.list_of_models.copy()
@@ -48,7 +62,7 @@ class alse:
 
         for _ in range(num_points):
             model_list = ModelListGP(*[model for model in list_of_models_temp])
-            eci = ExpectedCoverageImprovement(
+            self.eci = ExpectedCoverageImprovement(
                 model=model_list,
                 constraints=self.y_constraints,
                 punchout_radius=self.punchout_radius,
@@ -56,7 +70,7 @@ class alse:
                 num_samples=512,
             )
             x_next, _ = optimize_acqf(
-                acq_function=eci,
+                acq_function=self.eci,
                 bounds=normalized_bounds,
                 q=1,
                 num_restarts=10,
@@ -74,3 +88,6 @@ class alse:
                 )
         self.next_batch_test_point = unnormalize(train_x_temp[-num_points:], self.x_bounds)
         return self.next_batch_test_point
+    
+    def get_acq_val_grid(self):
+        return self.eci.forward(self.grid())
