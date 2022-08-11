@@ -66,7 +66,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         return self.model.models[0].train_inputs[0]
 
     def _generate_ball_of_points(
-        self, num_samples, radius, device=None, dtype=torch.double
+        self, num_samples, radius, device=None, dtype=torch.float
     ):
         """Creates a ball of points to be used for MC."""
         tkwargs = {"device": device, "dtype": dtype}
