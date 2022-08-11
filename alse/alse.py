@@ -82,11 +82,11 @@ class alse:
             train_x_temp = torch.cat((train_x_temp, x_next))
             
             for i in range(len(self.model_type)):
-                sampler = SobolQMCNormalSampler(512) # This number somehow affects the
+                # sampler = SobolQMCNormalSampler(512) # This number somehow affects the
                                                      # number of samples in optimize_acqf
                 # Add fantasy models to list
                 list_of_models_temp.append(
-                    model_list.models[i].fantasize(train_x_temp, sampler)
+                    model_list.models[i].fantasize(train_x_temp, self.eci.sampler)
                 )
 
                 # y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
