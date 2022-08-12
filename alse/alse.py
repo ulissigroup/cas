@@ -41,19 +41,12 @@ class alse:
                 )
             )
 
-    def grid(self):
-        a, b = torch.meshgrid(
-            torch.linspace(0, 1, 10), torch.linspace(0, 1, 10),
-            indexing='xy',
-        )
-        c = torch.stack(
-            (
-                torch.reshape(a, (a.shape[0] * a.shape[1],)),
-                torch.reshape(b, (b.shape[0] * b.shape[1],)),
-            ),
-            dim=1,
-        )
-        return c.unsqueeze(1)
+    # An n-dim grid for evaluating acq val over the parameter space
+    # N controls the density per dim (careful, this is memory heavy)
+    def grid(self, N, dim):
+        a = torch.meshgrid(dim*[torch.linspace(0, 1, N)])
+        b = [item.reshape(N**dim) for item in a]
+        return torch.stack(b,-1).unsqueeze(1)
 
     def next_test_points(self, num_points):
         normalized_bounds = torch.tensor([[0, 0], [1, 1]], **tkwargs)
@@ -91,5 +84,5 @@ class alse:
         self.next_batch_test_point = unnormalize(train_x_temp[-num_points:], self.x_bounds)
         return self.next_batch_test_point
     
-    def get_acq_val_grid(self):
-        return self.eci.forward(self.grid())
+    def get_acq_val_grid(self, N, dim):
+        return self.eci.forward(self.grid(N, dim))
