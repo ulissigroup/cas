@@ -15,7 +15,7 @@ def gen_test_point_for_accuracy(pos_overlap, candidates, num_points):
     # Select from available candidates
     in_bound_tpoints = in_bound_cand[torch.randint(in_bound_cand.shape[0], (num_points//2,))]
                                                                                 # In case odd number points requested
-    out_of_bound_tpoints = out_of_bound_cand[torch.randint(in_bound_cand.shape[0], (num_points//2 + num_points%2,))]
+    out_of_bound_tpoints = out_of_bound_cand[torch.randint(out_of_bound_cand.shape[0], (num_points//2 + num_points%2,))]
     return in_bound_tpoints, out_of_bound_tpoints
 
 
