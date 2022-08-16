@@ -49,7 +49,8 @@ class alse:
         return torch.stack(b,-1).unsqueeze(1)
 
     def next_test_points(self, num_points):
-        normalized_bounds = torch.tensor([[0, 0], [1, 1]], **tkwargs)
+        # TODO how to automatically fill in the correct normalized bounds?
+        normalized_bounds = torch.tensor([[0, 0, 0], [1, 1, 1]], **tkwargs)
         list_of_models_temp = self.list_of_models.copy()
         train_x_temp = self.normalized_x.clone().detach()
         train_y_temp = self.train_y.copy()
