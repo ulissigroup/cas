@@ -56,7 +56,7 @@ class alse:
         return c.unsqueeze(1)
 
     def next_test_points(self, num_points):
-        normalized_bounds = torch.tensor([[0, 0], [1, 1]], **tkwargs)
+        normalized_bounds = torch.tensor([[0, 0, 0], [1, 1, 1]], **tkwargs)
         list_of_models_temp = self.list_of_models.copy()
         train_x_temp = self.normalized_x.clone().detach()
         train_y_temp = self.train_y.copy()

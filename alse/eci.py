@@ -49,9 +49,9 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         self._thresholds = torch.tensor(
             [threshold for _, threshold in self.constraints]
         ).to(bounds)
-        assert (
-            all(ub > lb for lb, ub in self.bounds.T) and len(self.bounds.T) == self.dim
-        )
+        # assert (
+        #     all(ub > lb for lb, ub in self.bounds.T) and len(self.bounds.T) == self.dim
+        # )
 
     @property
     def num_outputs(self):
