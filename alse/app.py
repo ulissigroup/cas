@@ -253,7 +253,10 @@ def initialize_alse(
                 data=new_pts_df.to_dict("records"),
                 columns=[{"name": i, "id": i, "editable": False} for i in x_names]
                 + [{"name": i, "id": i, "editable": True} for i in y_names],
-                style_table={"minWidth": "100%"},
+                    style_data={
+                        'whiteSpace': 'normal',
+                        'height': 'auto',
+                    },
                 editable=True,
             )
         ]
