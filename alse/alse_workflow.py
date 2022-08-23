@@ -43,8 +43,9 @@ class alse:
 
     def grid(self):
         a, b = torch.meshgrid(
-            torch.linspace(0, 1, 10), torch.linspace(0, 1, 10),
-            indexing='xy',
+            torch.linspace(0, 1, 10),
+            torch.linspace(0, 1, 10),
+            indexing="xy",
         )
         c = torch.stack(
             (
@@ -57,7 +58,9 @@ class alse:
 
     def next_test_points(self, num_points):
         # normalized_bounds = torch.tensor([[0, 0, 0], [1, 1, 1]], **tkwargs)
-        normalized_bounds = torch.tensor([[0] * len(self.list_of_models), [1] * len(self.list_of_models)], **tkwargs)
+        normalized_bounds = torch.tensor(
+            [[0] * len(self.list_of_models), [1] * len(self.list_of_models)], **tkwargs
+        )
 
         list_of_models_temp = self.list_of_models.copy()
         train_x_temp = self.normalized_x.clone().detach()
@@ -84,7 +87,7 @@ class alse:
             print(train_x_temp)
             print(x_next)
             train_x_temp = torch.cat((train_x_temp, x_next))
-            
+
             for i in range(len(self.model_type)):
                 y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
 
@@ -92,8 +95,10 @@ class alse:
                 list_of_models_temp.append(
                     fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
                 )
-        self.next_batch_test_point = unnormalize(train_x_temp[-num_points:], self.x_bounds)
+        self.next_batch_test_point = unnormalize(
+            train_x_temp[-num_points:], self.x_bounds
+        )
         return self.next_batch_test_point
-    
+
     def get_acq_val_grid(self):
         return self.eci.forward(self.grid())
