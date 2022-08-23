@@ -81,14 +81,7 @@ app.layout = html.Div(
             className="mt-3",
         ),
         html.P(),
-
-        dash_table.DataTable(
-            id="suggest_table",
-            style_table={"height": "200px", "overflowX": "auto", "overflowY": "auto"},
-            style_header={"fontWeight": "bold"},
-            editable=True,
-            css=[{"selector": "table", "rule": "table-layout: fixed"}],
-        ),
+        html.Div(id="suggest_data"),
     ]
 )
 
@@ -213,7 +206,7 @@ def set_constraint(y_data):
 
 
 @app.callback(
-    Output("suggest_table", "data"),
+    Output("suggest_data", "children"),
     Input("button_runAL", "n_clicks"),
     State("stored-data", "data"),
     State(component_id={"type": "x_min_", "index": ALL}, component_property="value"),
@@ -245,13 +238,25 @@ def initialize_alse(
         ]
         bounds = torch.tensor([[float(i) for i in x_min], [float(i) for i in x_max]])
         algo = alse(X, bounds, output_param, constraints)
-        algo.initialize_model(["reg"] * len(y_names)) # TODO: add gp type selection (class or reg)
-        new_pts = algo.next_test_points(5) 
+        algo.initialize_model(
+            ["reg"] * len(y_names)
+        )  # TODO: add gp type selection (class or reg)
+        new_pts = algo.next_test_points(5)
         new_pts_df = pd.DataFrame(new_pts.numpy())
         new_pts_df.columns = [i for i in x_names]
         for i in y_names:
-            new_pts_df[i] = 'tbd'
-    return new_pts_df.to_dict("records")
+            new_pts_df[i] = "tbd"
+
+        return [
+            dash_table.DataTable(
+                id="suggest_table",
+                data=new_pts_df.to_dict("records"),
+                columns=[{"name": i, "id": i, "editable": False} for i in x_names]
+                + [{"name": i, "id": i, "editable": True} for i in y_names],
+                style_table={"minWidth": "100%"},
+                editable=True,
+            )
+        ]
 
 
 # TODO: add punchout_radius
