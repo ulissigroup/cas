@@ -44,28 +44,40 @@ app.layout = html.Div(
         ),
         html.Div(id="output-div"),
         html.Div(id="output-datatable"),
+        html.P(),
         html.Div(
             id="xrange",
             # style={'height': '280px', 'overflowX': 'hidden', 'overflowY': 'auto'},
         ),
         dcc.Store(id="xrange-store", storage_type="memory"),
+        html.P(),
         html.Div(
             id="yconstraint",
             # style={'height': '280px', 'overflowX': 'hidden', 'overflowY': 'auto'},
         ),
         dcc.Store(id="yconstraint-store", storage_type="memory"),
         html.Hr(),
-        html.Center(
+        html.Center([
             dbc.Button(
                 "Run Bayesian Optimization",
                 id="button_runAL",
                 n_clicks=0,
-                style={"width": "100%"},
+                style={"width": "auto"},
                 className="mt-3",
                 color="primary",
                 size="lg",
             ),
+            dbc.Button(
+                "Plot Model Predictions",
+                id="button_plot",
+                n_clicks=0,
+                style={"width": "auto"},
+                className="mt-3",
+                color="primary",
+                size="lg",
+            ),]
         ),
+
         html.Center(
             [
                 dcc.Loading(
@@ -186,13 +198,14 @@ def set_constraint(y_data):
                     id={"type": "y_name_", "index": str(i)},
                 )
             )
-            children.append(
-                dcc.Input(
+            children.append(html.Div(
+                [dcc.Dropdown(
                     id={"type": "y_cons_str_", "index": str(i)},
-                    type="text",
-                    placeholder="gt or lt",
-                )
-            )
+                    options=[{"label": "Greater than", "value": "gt"},
+                             {"label": "Less than", "value": "lt"}],
+                )],
+                style={'width': '20%'}
+            ))
             children.append(
                 dcc.Input(
                     id={"type": "y_cons_int_", "index": str(i)},
@@ -238,6 +251,7 @@ def initialize_alse(
         ]
         bounds = torch.tensor([[float(i) for i in x_min], [float(i) for i in x_max]])
         algo = alse(X, bounds, output_param, constraints)
+        # TODO: store the posterior for all 3 outputs
         algo.initialize_model(
             ["reg"] * len(y_names)
         )  # TODO: add gp type selection (class or reg)
@@ -253,10 +267,11 @@ def initialize_alse(
                 data=new_pts_df.to_dict("records"),
                 columns=[{"name": i, "id": i, "editable": False} for i in x_names]
                 + [{"name": i, "id": i, "editable": True} for i in y_names],
-                    style_data={
-                        'whiteSpace': 'normal',
-                        'height': 'auto',
-                    },
+                style_data={
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                    'width': 'auto',
+                },
                 editable=True,
             )
         ]
