@@ -1,6 +1,7 @@
 import base64
 import datetime
 import io
+from dash import Dash, dcc, html, Input, Output, State, MATCH, ALL
 
 import dash
 from dash.dependencies import Input, Output, State
@@ -10,9 +11,9 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash import dash_table
 import plotly.express as px
-
+import torch
 import pandas as pd
-
+from alse.alse_workflow import alse
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
@@ -43,20 +44,21 @@ app.layout = html.Div(
         ),
         html.Div(id="output-div"),
         html.Div(id="output-datatable"),
-        
         html.Div(
             id="xrange",
             # style={'height': '280px', 'overflowX': 'hidden', 'overflowY': 'auto'},
         ),
+        dcc.Store(id="xrange-store", storage_type="memory"),
         html.Div(
             id="yconstraint",
             # style={'height': '280px', 'overflowX': 'hidden', 'overflowY': 'auto'},
         ),
+        dcc.Store(id="yconstraint-store", storage_type="memory"),
         html.Hr(),
         html.Center(
             dbc.Button(
                 "Run Bayesian Optimization",
-                id="button_runBO",
+                id="button_runAL",
                 n_clicks=0,
                 style={"width": "100%"},
                 className="mt-3",
@@ -79,22 +81,22 @@ app.layout = html.Div(
             className="mt-3",
         ),
         html.P(),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        html.H5(
-                            "Suggested data table",
-                            style={"display": "inline-block"},
-                        ),
-                    ],
-                    width="auto",
-                ),
-            ],
-            justify="between",
-        ),
+        # dbc.Row(
+        #     [
+        #         dbc.Col(
+        #             [
+        #                 html.H5(
+        #                     "Suggested data table",
+        #                     style={"display": "inline-block"},
+        #                 ),
+        #             ],
+        #             width="auto",
+        #         ),
+        #     ],
+        #     justify="between",
+        # ),
         dash_table.DataTable(
-            id={"type": "suggest_table", "index": 3},
+            id="suggest_table",
             style_table={"height": "200px", "overflowX": "auto", "overflowY": "auto"},
             style_header={"fontWeight": "bold"},
             editable=True,
@@ -132,16 +134,15 @@ def parse_contents(contents, filename, date):
             ),
             dcc.Store(id="stored-data", data=df.to_dict("records")),
             html.Hr(),  # horizontal line
-
             html.P("Insert X axis data"),
             dcc.Dropdown(
-                id="xaxis-data",
+                id="xaxis-name",
                 options=[{"label": x, "value": x} for x in df.columns],
                 multi=True,
             ),
             html.P("Inset Y axis data"),
             dcc.Dropdown(
-                id="yaxis-data",
+                id="yaxis-name",
                 options=[{"label": x, "value": x} for x in df.columns],
                 multi=True,
             ),
@@ -164,57 +165,127 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         return children
 
 
-@app.callback(Output("xrange", "children"), Input("xaxis-data", "value"))
+@app.callback(Output("xrange", "children"), Input("xaxis-name", "value"))
 def set_range(x_data):
     if x_data is not None:
         children = [html.P("Input Range")]
         for i in range(len(x_data)):
-            children.append(html.Div(
+            children.append(
+                html.Div(
                     x_data[i],
-                    id="x_data_" + str(i),
-                ))
+                    id={"type": "x_name_", "index": str(i)},
+                )
+            )
             children.append(
                 dcc.Input(
-                    id="x_min_" + str(i),
+                    id={"type": "x_min_", "index": str(i)},
                     type="number",
                     placeholder="Min",
-                ))
+                )
+            )
             children.append(
                 dcc.Input(
-                    id="x_max_" + str(i),
+                    id={"type": "x_max_", "index": str(i)},
                     type="number",
                     placeholder="Max",
-                ))
+                )
+            )
         return children
     else:
         return dash.no_update
 
 
-@app.callback(Output("yconstraint", "children"), Input("yaxis-data", "value"))
+@app.callback(Output("yconstraint", "children"), Input("yaxis-name", "value"))
 def set_constraint(y_data):
     if y_data is not None:
         children = [html.P("Output Constraints")]
         for i in range(len(y_data)):
-            children.append(html.Div(
+            children.append(
+                html.Div(
                     y_data[i],
-                    id="y_data_" + str(i),
-                ))
+                    id={"type": "y_name_", "index": str(i)},
+                )
+            )
             children.append(
                 dcc.Input(
-                    id="y_cons_str_" + str(i),
+                    id={"type": "y_cons_str_", "index": str(i)},
                     type="text",
                     placeholder="gt or lt",
-                ))
+                )
+            )
             children.append(
                 dcc.Input(
-                    id="y_cons_int_" + str(i),
+                    id={"type": "y_cons_int_", "index": str(i)},
                     type="number",
                     placeholder="constraint",
-                ))
+                )
+            )
         return children
     else:
         return dash.no_update
 
+
+# @app.callback(Output("yconstraint-store", "data"),
+#             Input(component_id={'type': 'y_name_', 'index': MATCH}, component_property='value'),
+#             Input(component_id={'type': 'y_cons_str_', 'index': MATCH}, component_property='value'),
+#             Input(component_id={'type': 'y_cons_int_', 'index': MATCH}, component_property='value'),)
+# def update_constraint(y_name_, y_cons_str_, y_cons_int_):
+#     data[y_name_]["str"] = y_cons_int_
+#     return data
+
+
+@app.callback(
+    Output("suggest_table", "data"),
+    Input("button_runAL", "n_clicks"),
+    State("stored-data", "data"),
+    State(component_id={"type": "x_min_", "index": ALL}, component_property="value"),
+    State(component_id={"type": "x_max_", "index": ALL}, component_property="value"),
+    State(
+        component_id={"type": "y_cons_str_", "index": ALL}, component_property="value"
+    ),
+    State(
+        component_id={"type": "y_cons_int_", "index": ALL}, component_property="value"
+    ),
+    State("xaxis-name", "value"),
+    State("yaxis-name", "value"),
+    prevent_initial_call=True,
+)
+def initialize_alse(
+    nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_names
+):
+    if nbutton > 0:
+        dff = pd.DataFrame(data)
+        input_param = []
+        for xname in x_names:
+            input_param.append(torch.tensor(dff[xname]))
+        output_param = []
+        for yname in y_names:
+            output_param.append(torch.tensor(dff[yname]).unsqueeze(-1))
+        X = torch.stack(tuple(input_param), -1)
+        constraints = [
+            (y_cons_str[i], float(y_cons_int[i])) for i in range(len(y_cons_str))
+        ]
+        bounds = torch.tensor([[float(i) for i in x_min], [float(i) for i in x_max]])
+        algo = alse(X, bounds, output_param, constraints)
+        print(X)
+        print(bounds)
+        print(output_param)
+        print(constraints)
+        # algo.initialize_model(["reg", "reg", "reg"])
+        algo.initialize_model(["reg"])
+        new_pts = algo.next_test_points(5)
+        new_pts_df = pd.DataFrame(new_pts.numpy())
+        new_pts_df.columns = [i for i in x_names]
+        # bounds = torch.tensor([[i for i in x_range], [3000, 2700, 4]])
+    return new_pts_df.to_dict("records")
+
+
+# TODO: add punchout_radius
+# TODO: add gp type selection (class or reg)
+# TODO: generate suggested test points in a table
+# TODO: allow editing of the table (adding outputs for the test points)
+# TODO: add a button to update the initial data table
+# TODO: add visualizations
 
 if __name__ == "__main__":
     app.run_server(debug=True)
