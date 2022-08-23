@@ -58,7 +58,7 @@ class alse:
 
     def next_test_points(self, num_points):
         normalized_bounds = torch.tensor(
-            [[0] * len(self.list_of_models), [1] * len(self.list_of_models)], **tkwargs
+            [[0] * self.train_x.shape[1], [1] * self.train_x.shape[1]], **tkwargs
         )
 
         list_of_models_temp = self.list_of_models.copy()
@@ -83,8 +83,6 @@ class alse:
                 # fixed_features_list=[{2: 0, 2: 1, 3: 0.9}]
             )
             list_of_models_temp = []
-            print(train_x_temp)
-            print(x_next)
             train_x_temp = torch.cat((train_x_temp, x_next))
 
             for i in range(len(self.model_type)):

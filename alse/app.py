@@ -245,10 +245,12 @@ def initialize_alse(
         ]
         bounds = torch.tensor([[float(i) for i in x_min], [float(i) for i in x_max]])
         algo = alse(X, bounds, output_param, constraints)
-        algo.initialize_model(["reg"] * len(x_names)) # TODO: add gp type selection (class or reg)
+        algo.initialize_model(["reg"] * len(y_names)) # TODO: add gp type selection (class or reg)
         new_pts = algo.next_test_points(5) 
         new_pts_df = pd.DataFrame(new_pts.numpy())
         new_pts_df.columns = [i for i in x_names]
+        for i in y_names:
+            new_pts_df[i] = 'tbd'
     return new_pts_df.to_dict("records")
 
 
