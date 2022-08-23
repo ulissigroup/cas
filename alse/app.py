@@ -81,20 +81,7 @@ app.layout = html.Div(
             className="mt-3",
         ),
         html.P(),
-        # dbc.Row(
-        #     [
-        #         dbc.Col(
-        #             [
-        #                 html.H5(
-        #                     "Suggested data table",
-        #                     style={"display": "inline-block"},
-        #                 ),
-        #             ],
-        #             width="auto",
-        #         ),
-        #     ],
-        #     justify="between",
-        # ),
+
         dash_table.DataTable(
             id="suggest_table",
             style_table={"height": "200px", "overflowX": "auto", "overflowY": "auto"},
@@ -225,15 +212,6 @@ def set_constraint(y_data):
         return dash.no_update
 
 
-# @app.callback(Output("yconstraint-store", "data"),
-#             Input(component_id={'type': 'y_name_', 'index': MATCH}, component_property='value'),
-#             Input(component_id={'type': 'y_cons_str_', 'index': MATCH}, component_property='value'),
-#             Input(component_id={'type': 'y_cons_int_', 'index': MATCH}, component_property='value'),)
-# def update_constraint(y_name_, y_cons_str_, y_cons_int_):
-#     data[y_name_]["str"] = y_cons_int_
-#     return data
-
-
 @app.callback(
     Output("suggest_table", "data"),
     Input("button_runAL", "n_clicks"),
@@ -267,21 +245,15 @@ def initialize_alse(
         ]
         bounds = torch.tensor([[float(i) for i in x_min], [float(i) for i in x_max]])
         algo = alse(X, bounds, output_param, constraints)
-        print(X)
-        print(bounds)
-        print(output_param)
-        print(constraints)
-        # algo.initialize_model(["reg", "reg", "reg"])
-        algo.initialize_model(["reg"])
-        new_pts = algo.next_test_points(5)
+        algo.initialize_model(["reg"] * len(x_names)) # TODO: add gp type selection (class or reg)
+        new_pts = algo.next_test_points(5) 
         new_pts_df = pd.DataFrame(new_pts.numpy())
         new_pts_df.columns = [i for i in x_names]
-        # bounds = torch.tensor([[i for i in x_range], [3000, 2700, 4]])
     return new_pts_df.to_dict("records")
 
 
 # TODO: add punchout_radius
-# TODO: add gp type selection (class or reg)
+
 # TODO: generate suggested test points in a table
 # TODO: allow editing of the table (adding outputs for the test points)
 # TODO: add a button to update the initial data table
