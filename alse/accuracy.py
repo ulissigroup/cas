@@ -13,7 +13,8 @@ def gen_test_point_for_accuracy(pos_overlap, candidates, num_points, N, threshol
     pos_mask = _clear_side(pos_mask.reshape(N,N,N)).flatten().unsqueeze(-1)
     pos_surface = _boundary_surface(candidates, pos_mask)
     # Must use double for _get_dist because of matrix multiplication, otherwise loss of precision
-    dist_mask = _get_dist(candidates.double(), pos_surface.double()) < threshold
+    dist = _get_dist(candidates.double(), pos_surface.double())
+    dist_mask = _dist_mask(dist, threshold)
     # Retain candidates within the threshold (ex. 10%)
     in_threshold_cand = torch.masked_select(candidates, dist_mask.unsqueeze(-1)).reshape(dist_mask.sum(), candidates.shape[-1])
     # Separate candidates
