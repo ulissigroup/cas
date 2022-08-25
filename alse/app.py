@@ -57,27 +57,28 @@ app.layout = html.Div(
         ),
         dcc.Store(id="yconstraint-store", storage_type="memory"),
         html.Hr(),
-        html.Center([
-            dbc.Button(
-                "Run Bayesian Optimization",
-                id="button_runAL",
-                n_clicks=0,
-                style={"width": "auto"},
-                className="mt-3",
-                color="primary",
-                size="lg",
-            ),
-            dbc.Button(
-                "Plot Model Predictions",
-                id="button_plot",
-                n_clicks=0,
-                style={"width": "auto"},
-                className="mt-3",
-                color="primary",
-                size="lg",
-            ),]
+        html.Center(
+            [
+                dbc.Button(
+                    "Run Bayesian Optimization",
+                    id="button_runAL",
+                    n_clicks=0,
+                    style={"width": "auto"},
+                    className="mt-3",
+                    color="primary",
+                    size="lg",
+                ),
+                dbc.Button(
+                    "Plot Model Predictions",
+                    id="button_plot",
+                    n_clicks=0,
+                    style={"width": "auto"},
+                    className="mt-3",
+                    color="primary",
+                    size="lg",
+                ),
+            ]
         ),
-
         html.Center(
             [
                 dcc.Loading(
@@ -94,6 +95,15 @@ app.layout = html.Div(
         ),
         html.P(),
         html.Div(id="suggest_data"),
+        dbc.Button(
+            "Update Data Table",
+            id="update_table",
+            n_clicks=0,
+            style={"width": "auto"},
+            className="mt-3",
+            color="primary",
+            size="lg",
+        ),
     ]
 )
 
@@ -123,6 +133,9 @@ def parse_contents(contents, filename, date):
                 data=df.to_dict("records"),
                 columns=[{"name": i, "id": i} for i in df.columns],
                 page_size=15,
+                export_format='xlsx',
+                export_headers='display',
+                merge_duplicate_headers=True
             ),
             dcc.Store(id="stored-data", data=df.to_dict("records")),
             html.Hr(),  # horizontal line
@@ -198,14 +211,20 @@ def set_constraint(y_data):
                     id={"type": "y_name_", "index": str(i)},
                 )
             )
-            children.append(html.Div(
-                [dcc.Dropdown(
-                    id={"type": "y_cons_str_", "index": str(i)},
-                    options=[{"label": "Greater than", "value": "gt"},
-                             {"label": "Less than", "value": "lt"}],
-                )],
-                style={'width': '20%'}
-            ))
+            children.append(
+                html.Div(
+                    [
+                        dcc.Dropdown(
+                            id={"type": "y_cons_str_", "index": str(i)},
+                            options=[
+                                {"label": "Greater than", "value": "gt"},
+                                {"label": "Less than", "value": "lt"},
+                            ],
+                        )
+                    ],
+                    style={"width": "20%"},
+                )
+            )
             children.append(
                 dcc.Input(
                     id={"type": "y_cons_int_", "index": str(i)},
@@ -268,17 +287,29 @@ def initialize_alse(
                 columns=[{"name": i, "id": i, "editable": False} for i in x_names]
                 + [{"name": i, "id": i, "editable": True} for i in y_names],
                 style_data={
-                    'whiteSpace': 'normal',
-                    'height': 'auto',
-                    'width': 'auto',
+                    "whiteSpace": "normal",
+                    "height": "auto",
+                    "width": "auto",
                 },
                 editable=True,
             )
         ]
 
 
-# TODO: add punchout_radius
+@app.callback(
+    Output()
+    Input("button_runAL", "n_clicks"),
+    State("suggest_table", "data"),
+)
+def initialize_alse(
+    nbutton, 
+):
+    if nbutton > 0:
 
+
+        return 
+
+# TODO: add punchout_radius
 # TODO: generate suggested test points in a table
 # TODO: allow editing of the table (adding outputs for the test points)
 # TODO: add a button to update the initial data table
