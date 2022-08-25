@@ -97,7 +97,7 @@ app.layout = html.Div(
         html.Div(id="suggest_data"),
         dbc.Button(
             "Update Data Table",
-            id="update_table",
+            id="button_update_table",
             n_clicks=0,
             style={"width": "auto"},
             className="mt-3",
@@ -264,7 +264,7 @@ def initialize_alse(
             input_param.append(torch.tensor(dff[xname]))
         output_param = []
         for yname in y_names:
-            output_param.append(torch.tensor(dff[yname]).unsqueeze(-1))
+            output_param.append(torch.tensor(pd.to_numeric(dff[yname])).unsqueeze(-1))
         X = torch.stack(tuple(input_param), -1)
         constraints = [
             (y_cons_str[i], float(y_cons_int[i])) for i in range(len(y_cons_str))
@@ -280,6 +280,7 @@ def initialize_alse(
         new_pts_df.columns = [i for i in x_names]
         for i in y_names:
             new_pts_df[i] = "tbd"
+        new_pts_df["id"] = f"batch {nbutton}"
 
         return [
             dash_table.DataTable(
@@ -300,15 +301,17 @@ def initialize_alse(
 @app.callback(
     Output("all_data", "data"),
     Output("stored-data", "data"),
-    Input("button_runAL", "n_clicks"),
+    Input("button_update_table", "n_clicks"),
     State("suggest_table", "data"),
+    State("stored-data", "data"),
+    prevent_initial_call=True,
 )
-def initialize_alse(
-    nbutton,
-):
+def update_table(nbutton, new_data, old_data):
     if nbutton > 0:
-
-        return
+        new_data = pd.DataFrame(new_data)
+        old_df = pd.DataFrame(old_data)
+        result = pd.concat([new_data, old_df], ignore_index=True, sort=False)
+        return result.to_dict("records"), result.to_dict("records")
 
 
 # TODO: add punchout_radius
