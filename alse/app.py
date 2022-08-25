@@ -130,12 +130,13 @@ def parse_contents(contents, filename, date):
             # html.Button(id="submit-button", children="Create Graph"),
             html.Hr(),
             dash_table.DataTable(
+                id="all_data",
                 data=df.to_dict("records"),
                 columns=[{"name": i, "id": i} for i in df.columns],
                 page_size=15,
-                export_format='xlsx',
-                export_headers='display',
-                merge_duplicate_headers=True
+                export_format="xlsx",
+                export_headers="display",
+                merge_duplicate_headers=True,
             ),
             dcc.Store(id="stored-data", data=df.to_dict("records")),
             html.Hr(),  # horizontal line
@@ -297,17 +298,18 @@ def initialize_alse(
 
 
 @app.callback(
-    Output()
+    Output("all_data", "data"),
+    Output("stored-data", "data"),
     Input("button_runAL", "n_clicks"),
     State("suggest_table", "data"),
 )
 def initialize_alse(
-    nbutton, 
+    nbutton,
 ):
     if nbutton > 0:
 
+        return
 
-        return 
 
 # TODO: add punchout_radius
 # TODO: generate suggested test points in a table
