@@ -14,16 +14,15 @@ def gen_test_point_for_accuracy(pos_overlap, candidates, num_points, N, threshol
     pos_surface = _boundary_surface(candidates, pos_mask)
     # Must use double for _get_dist because of matrix multiplication, otherwise loss of precision
     dist = _get_dist(candidates.double(), pos_surface.double())
-    dist_mask = _dist_mask(dist, threshold)
-    # Retain candidates within the threshold (ex. 10%)
-    in_threshold_cand = torch.masked_select(candidates, dist_mask.unsqueeze(-1)).reshape(dist_mask.sum(), candidates.shape[-1])
-    # Separate candidates
-    pos_overlap = pos_overlap.flatten().unsqueeze(-1)
-    masked_in_bound = torch.masked_select(candidates, pos_overlap) # Returns a 1D tensor
-    masked_out_of_bound = torch.masked_select(candidates, ~pos_overlap)
+    dist_mask = _dist_mask(dist, threshold).unsqueeze(-1)
+    # Convert to 1-D and unsqueeze
+    pos_overlap = pos_overlap.flatten().unsqueeze(-1)  
+                                                # Combined mask: in bound and in threshold
+    all_in_bound_points = torch.masked_select(candidates, pos_overlap & dist_mask) # Returns a 1D tensor
+    all_out_of_bound_points = torch.masked_select(candidates, ~pos_overlap & dist_mask)
     # Reshape to correct shape
-    in_bound_cand = masked_in_bound.reshape(pos_overlap.sum(), candidates.shape[1])
-    out_of_bound_cand = masked_out_of_bound.reshape((~pos_overlap).sum(), candidates.shape[1])
+    in_bound_cand = all_in_bound_points.reshape((pos_overlap & dist_mask).sum(), candidates.shape[1])
+    out_of_bound_cand = all_out_of_bound_points.reshape((~pos_overlap & dist_mask).sum(), candidates.shape[1])
     # Select from available candidates
     in_bound_tpoints = in_bound_cand[torch.randint(in_bound_cand.shape[0], (num_points//2,))]
                                                                                 # In case odd number points requested
