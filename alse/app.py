@@ -2,6 +2,7 @@ import base64
 import datetime
 import io
 from dash import Dash, dcc, html, Input, Output, State, MATCH, ALL
+import plotly.graph_objects as go
 
 import dash
 from dash.dependencies import Input, Output, State
@@ -14,6 +15,7 @@ import plotly.express as px
 import torch
 import pandas as pd
 from alse.alse_workflow import alse
+from plotly.subplots import make_subplots
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
@@ -44,18 +46,6 @@ app.layout = html.Div(
         ),
         html.Div(id="output-div"),
         html.Div(id="output-datatable"),
-        html.P(),
-        html.Div(
-            id="xrange",
-            # style={'height': '280px', 'overflowX': 'hidden', 'overflowY': 'auto'},
-        ),
-        dcc.Store(id="xrange-store", storage_type="memory"),
-        html.P(),
-        html.Div(
-            id="yconstraint",
-            # style={'height': '280px', 'overflowX': 'hidden', 'overflowY': 'auto'},
-        ),
-        dcc.Store(id="yconstraint-store", storage_type="memory"),
         html.Hr(),
         html.Center(
             [
@@ -79,6 +69,7 @@ app.layout = html.Div(
                 ),
             ]
         ),
+        html.Div(id="figures"),
         html.Center(
             [
                 dcc.Loading(
@@ -137,8 +128,10 @@ def parse_contents(contents, filename, date):
                 export_format="xlsx",
                 export_headers="display",
                 merge_duplicate_headers=True,
+                style_data_conditional=[],
             ),
             dcc.Store(id="stored-data", data=df.to_dict("records")),
+            dcc.Store(id="model_predictions"),
             html.Hr(),  # horizontal line
             html.P("Insert X axis data"),
             dcc.Dropdown(
@@ -146,11 +139,19 @@ def parse_contents(contents, filename, date):
                 options=[{"label": x, "value": x} for x in df.columns],
                 multi=True,
             ),
+            html.Div(
+                id="xrange",
+                children=[html.P("Input Range")],
+            ),
             html.P("Inset Y axis data"),
             dcc.Dropdown(
                 id="yaxis-name",
                 options=[{"label": x, "value": x} for x in df.columns],
                 multi=True,
+            ),
+            html.Div(
+                id="yconstraint",
+                children=[html.P("Output Constraints")],
             ),
         ]
     )
@@ -171,75 +172,107 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         return children
 
 
-@app.callback(Output("xrange", "children"), Input("xaxis-name", "value"))
-def set_range(x_data):
+@app.callback(
+    Output("xrange", "children"),
+    Input("xaxis-name", "value"),
+    State("xrange", "children"),
+)
+def set_range(x_data, current_range):
     if x_data is not None:
-        children = [html.P("Input Range")]
-        for i in range(len(x_data)):
-            children.append(
-                html.Div(
-                    x_data[i],
-                    id={"type": "x_name_", "index": str(i)},
-                )
+        current_range.append(
+            html.Div(
+                x_data[-1],
+                id={"type": "x_name_", "index": str(len(x_data))},
             )
-            children.append(
-                dcc.Input(
-                    id={"type": "x_min_", "index": str(i)},
-                    type="number",
-                    placeholder="Min",
-                )
+        )
+        current_range.append(
+            dcc.Input(
+                id={"type": "x_min_", "index": str(len(x_data))},
+                type="number",
+                placeholder="Min",
             )
-            children.append(
-                dcc.Input(
-                    id={"type": "x_max_", "index": str(i)},
-                    type="number",
-                    placeholder="Max",
-                )
+        )
+        current_range.append(
+            dcc.Input(
+                id={"type": "x_max_", "index": str(len(x_data))},
+                type="number",
+                placeholder="Max",
             )
-        return children
+        )
+        return current_range
     else:
         return dash.no_update
 
 
-@app.callback(Output("yconstraint", "children"), Input("yaxis-name", "value"))
-def set_constraint(y_data):
+# TODO: fix the bug where unselected yaxis remain in the section
+@app.callback(
+    Output("yconstraint", "children"),
+    Input("yaxis-name", "value"),
+    State("yconstraint", "children"),
+)
+def set_constraint(y_data, current_cons):
     if y_data is not None:
-        children = [html.P("Output Constraints")]
-        for i in range(len(y_data)):
-            children.append(
-                html.Div(
-                    y_data[i],
-                    id={"type": "y_name_", "index": str(i)},
-                )
+        current_cons.append(
+            html.Div(
+                y_data[-1],
+                id={"type": "y_name_", "index": str(len(y_data))},
             )
-            children.append(
-                html.Div(
-                    [
-                        dcc.Dropdown(
-                            id={"type": "y_cons_str_", "index": str(i)},
-                            options=[
-                                {"label": "Greater than", "value": "gt"},
-                                {"label": "Less than", "value": "lt"},
-                            ],
-                        )
-                    ],
-                    style={"width": "20%"},
-                )
+        )
+        current_cons.append(
+            html.Div(
+                [
+                    dcc.Dropdown(
+                        id={"type": "y_cons_str_", "index": str(len(y_data))},
+                        options=[
+                            {"label": "Greater than", "value": "gt"},
+                            {"label": "Less than", "value": "lt"},
+                        ],
+                    )
+                ],
+                style={"width": "20%"},
             )
-            children.append(
-                dcc.Input(
-                    id={"type": "y_cons_int_", "index": str(i)},
-                    type="number",
-                    placeholder="constraint",
-                )
+        )
+        current_cons.append(
+            dcc.Input(
+                id={"type": "y_cons_int_", "index": str(len(y_data))},
+                type="number",
+                placeholder="constraint",
             )
-        return children
+        )
+        return current_cons
     else:
         return dash.no_update
 
 
 @app.callback(
+    Output("all_data", "style_data_conditional"),
+    Input("xaxis-name", "value"),
+    Input("yaxis-name", "value"),
+    State("all_data", "style_data_conditional"),
+)
+def highlight_columns(x_data, y_data, curr_style):
+    if x_data is not None:
+        curr_style.append(
+            {
+                "if": {"column_id": x_data[-1]},
+                "backgroundColor": "#99763d",
+                "color": "white",
+            }
+        )
+    if y_data is not None:
+        curr_style.append(
+            {
+                "if": {"column_id": y_data[-1]},
+                "backgroundColor": "#5c6e3f",
+                "color": "white",
+            }
+        )
+    return curr_style
+
+
+@app.callback(
     Output("suggest_data", "children"),
+    Output("model_predictions", "data"),
     Input("button_runAL", "n_clicks"),
     State("stored-data", "data"),
     State(component_id={"type": "x_min_", "index": ALL}, component_property="value"),
@@ -254,9 +287,7 @@ def set_constraint(y_data):
     State("yaxis-name", "value"),
     prevent_initial_call=True,
 )
-def initialize_alse(
-    nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_names
-):
+def run_alse(nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_names):
     if nbutton > 0:
         dff = pd.DataFrame(data)
         input_param = []
@@ -275,6 +306,9 @@ def initialize_alse(
         algo.initialize_model(
             ["reg"] * len(y_names)
         )  # TODO: add gp type selection (class or reg)
+
+        grid = algo.get_grid(20)  # TODO: allow customized resolution
+
         new_pts = algo.next_test_points(5)
         new_pts_df = pd.DataFrame(new_pts.numpy())
         new_pts_df.columns = [i for i in x_names]
@@ -295,7 +329,60 @@ def initialize_alse(
                 },
                 editable=True,
             )
-        ]
+        ], algo.get_posterior_grid()
+
+
+@app.callback(
+    Output("figures", "children"),
+    Input("button_plot", "n_clicks"),
+    State("stored-data", "data"),
+    State(component_id={"type": "x_min_", "index": ALL}, component_property="value"),
+    State(component_id={"type": "x_max_", "index": ALL}, component_property="value"),
+    State("xaxis-name", "value"),
+    State("yaxis-name", "value"),
+    State("model_predictions", "data"),
+    prevent_initial_call=True,
+)
+def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior):
+    # assuming 3D!
+    if nbutton > 0:
+        dff = pd.DataFrame(data)
+        resolution = 20
+        [*X] = torch.meshgrid(
+            [torch.linspace(xmin[i], xmax[i], resolution) for i in range(len(xmin))],
+            indexing="xy",
+        )
+        fig_output = []
+        for i in range(len(posterior)):
+            fig = go.Figure(
+                data=go.Isosurface(
+                    x=[*X][0].flatten(),
+                    y=[*X][1].flatten(),
+                    z=[*X][2].flatten(),
+                    value=posterior[i],
+                    surface_count=7,  # number of isosurfaces, 2 by default: only min and max
+                    colorbar_nticks=7,  # colorbar ticks correspond to isosurface values
+                    caps=dict(x_show=False, y_show=False),
+                )
+            )
+            fig.add_trace(
+                go.Scatter3d(
+                    x=pd.to_numeric(dff[xname[0]]),
+                    y=pd.to_numeric(dff[xname[1]]),
+                    z=pd.to_numeric(dff[xname[2]]),
+                    text=[f"{yname[i]} : {value}" for value in dff[yname[i]]],
+                    mode="markers",
+                )
+            )
+            fig.update_layout(
+                autosize=True,
+                title=go.layout.Title(text=yname[i]),
+                scene=dict(
+                    xaxis_title=xname[0], yaxis_title=xname[1], zaxis_title=xname[2]
+                ),
+            )
+            fig_output.append(dcc.Graph(figure=fig))
+        return fig_output
 
 
 @app.callback(
@@ -314,11 +401,8 @@ def update_table(nbutton, new_data, old_data):
         return result.to_dict("records"), result.to_dict("records")
 
 
-# TODO: add punchout_radius
-# TODO: generate suggested test points in a table
-# TODO: allow editing of the table (adding outputs for the test points)
-# TODO: add a button to update the initial data table
+# TODO: add user specified punchout_radius, number of points generated in one batch
 # TODO: add visualizations
-
+# TODO: generate random initial training points
 if __name__ == "__main__":
     app.run_server(debug=True)

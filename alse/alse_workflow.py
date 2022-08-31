@@ -23,6 +23,7 @@ class alse:
         self.train_y = train_y
         self.y_constraints = y_constraints
         self.punchout_radius = punchout_radius
+        self.grid = None
 
     def initialize_model(self, model_type, **kwargs):
         """Function for initializing the models assuming all models using the same inputs.
@@ -41,20 +42,19 @@ class alse:
                 )
             )
 
-    def grid(self):
-        a, b = torch.meshgrid(
-            torch.linspace(0, 1, 10),
-            torch.linspace(0, 1, 10),
+    def get_grid(self, resolution=20):
+        [*X] = torch.meshgrid(
+            [
+                torch.linspace(0, 1, resolution, **tkwargs)
+                for _ in range(self.train_x.shape[1])
+            ],
             indexing="xy",
         )
-        c = torch.stack(
-            (
-                torch.reshape(a, (a.shape[0] * a.shape[1],)),
-                torch.reshape(b, (b.shape[0] * b.shape[1],)),
-            ),
+        self.grid = torch.stack(
+            [torch.reshape(i, (resolution ** self.train_x.shape[1],)) for i in [*X]],
             dim=1,
         )
-        return c.unsqueeze(1)
+        return self.grid
 
     def next_test_points(self, num_points):
         normalized_bounds = torch.tensor(
@@ -98,4 +98,20 @@ class alse:
         return self.next_batch_test_point
 
     def get_acq_val_grid(self):
+        for i in self.list_of_models:
+            i.eval()
+
+        if self.grid == None:
+            self.get_grid()
         return self.eci.forward(self.grid())
+
+    def get_posterior_grid(self):
+        for i in self.list_of_models:
+            i.eval()
+
+        if self.grid == None:
+            self.get_grid()
+        self.model_prediction = [
+            model(self.grid).loc.detach() for model in self.list_of_models
+        ]
+        return self.model_prediction
