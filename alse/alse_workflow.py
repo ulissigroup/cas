@@ -24,6 +24,7 @@ class alse:
         self.y_constraints = y_constraints
         self.punchout_radius = punchout_radius
         self.grid = None
+        self.model_prediction = None
 
     def initialize_model(self, model_type, **kwargs):
         """Function for initializing the models assuming all models using the same inputs.
@@ -105,13 +106,54 @@ class alse:
             self.get_grid()
         return self.eci.forward(self.grid())
 
-    def get_posterior_grid(self):
+    def get_posterior_grid(self, resolution=20):
+        """_summary_
+
+        Returns:
+            List: a list object with n tensor objects, each tensor is
+            of length d, where n is the number of output, and d is the
+            number of
+        """
         for i in self.list_of_models:
             i.eval()
 
         if self.grid == None:
-            self.get_grid()
+            self.get_grid(resolution)
         self.model_prediction = [
             model(self.grid).loc.detach() for model in self.list_of_models
         ]
         return self.model_prediction
+
+    def get_overlap(self, resolution=20):
+        """
+        Returns:
+            Tensor: a list of True and False indicating if the self.grid points
+            are inside or outside of the boundaries
+        """
+        if self.model_prediction == None:
+            self.get_posterior_grid(resolution)
+        in_boundary = [[]] * len(self.model_prediction)
+        for i, (direction, value) in enumerate(self.y_constraints):
+            if direction == "gt":
+                in_boundary[i] = self.model_prediction[i] > value
+            else:
+                in_boundary[i] = self.model_prediction[i] < value
+            if i == 0:
+                overlap = in_boundary[0]
+            else:
+                overlap = overlap & in_boundary[i]
+        return overlap
+
+    def get_points_mask(self, points_y):
+        in_boundary = [[]] * len(self.y_constraints)
+
+        for i, (direction, value) in enumerate(self.y_constraints):
+            if direction == "gt":
+                in_boundary[i] = points_y[i].flatten() > value
+            else:
+                in_boundary[i] = points_y[i].flatten() < value
+            if i == 0:
+                overlap = in_boundary[0]
+            else:
+                overlap = overlap & in_boundary[i]
+        return in_boundary, overlap
