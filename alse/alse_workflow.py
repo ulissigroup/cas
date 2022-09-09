@@ -42,6 +42,17 @@ class alse:
                     model_type[i], self.normalized_x, self.train_y[i], **kwargs
                 )
             )
+        self.normalized_bounds = torch.tensor(
+            [[0] * self.train_x.shape[1], [1] * self.train_x.shape[1]], **tkwargs
+        )
+        model_list = ModelListGP(*[model for model in self.list_of_models])
+        self.eci = ExpectedCoverageImprovement(
+            model=model_list,
+            constraints=self.y_constraints,
+            punchout_radius=self.punchout_radius,
+            bounds=self.normalized_bounds,
+            num_samples=512,
+        )
 
     def get_grid(self, resolution=20):
         [*X] = torch.meshgrid(
@@ -58,9 +69,6 @@ class alse:
         return self.grid
 
     def next_test_points(self, num_points):
-        normalized_bounds = torch.tensor(
-            [[0] * self.train_x.shape[1], [1] * self.train_x.shape[1]], **tkwargs
-        )
 
         list_of_models_temp = self.list_of_models.copy()
         train_x_temp = self.normalized_x.clone().detach()
@@ -72,12 +80,12 @@ class alse:
                 model=model_list,
                 constraints=self.y_constraints,
                 punchout_radius=self.punchout_radius,
-                bounds=normalized_bounds,
+                bounds=self.normalized_bounds,
                 num_samples=512,
             )
             x_next, _ = optimize_acqf(
                 acq_function=self.eci,
-                bounds=normalized_bounds,
+                bounds=self.normalized_bounds,
                 q=1,
                 num_restarts=10,
                 raw_samples=512,
@@ -98,13 +106,12 @@ class alse:
         )
         return self.next_batch_test_point
 
-    def get_acq_val_grid(self):
+    def get_acq_val_grid(self, resolution=20):
         for i in self.list_of_models:
             i.eval()
-
         if self.grid == None:
-            self.get_grid()
-        return self.eci.forward(self.grid())
+            self.get_grid(resolution)
+        return self.eci.forward(self.grid.unsqueeze(1))
 
     def get_posterior_grid(self, resolution=20):
         """_summary_
