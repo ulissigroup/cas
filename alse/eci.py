@@ -112,7 +112,6 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
     @t_batch_mode_transform(expected_q=1)
     def forward(self, X):
         """Evaluate Expected Improvement on the candidate set X."""
-        print(X)
         ball_around_X = self.ball_of_points + X
         domain_mask = smooth_mask(
             ball_around_X, self.bounds[0, :], self.bounds[1, :]

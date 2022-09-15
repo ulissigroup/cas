@@ -46,7 +46,7 @@ app.layout = html.Div(
         ),
         html.Div(id="output-div"),
         html.Div(id="output-datatable"),
-        html.Hr(),
+        html.Hr(),  # horizontal line
         html.Center(
             [
                 dbc.Button(
@@ -97,112 +97,6 @@ app.layout = html.Div(
         ),
     ]
 )
-
-
-def parse_contents(contents, filename, date):
-    content_type, content_string = contents.split(",")
-
-    decoded = base64.b64decode(content_string)
-    try:
-        if "csv" in filename:
-            # Assume that the user uploaded a CSV file
-            df = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
-        elif "xls" in filename:
-            # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
-    except Exception as e:
-        print(e)
-        return html.Div(["There was an error processing this file."])
-
-    return html.Div(
-        [
-            html.H5(filename),
-            html.H6(datetime.datetime.fromtimestamp(date)),
-            # html.Button(id="submit-button", children="Create Graph"),
-            html.Hr(),
-            dash_table.DataTable(
-                id="all_data",
-                data=df.to_dict("records"),
-                columns=[{"name": i, "id": i} for i in df.columns],
-                page_size=15,
-                export_format="xlsx",
-                export_headers="display",
-                merge_duplicate_headers=True,
-                style_data_conditional=[],
-            ),
-            dcc.Store(id="stored-data", data=df.to_dict("records")),
-            dcc.Store(id="model_predictions"),
-            html.Hr(),  # horizontal line
-            html.P("Insert X axis data"),
-            dcc.Dropdown(
-                id="xaxis-name",
-                options=[{"label": x, "value": x} for x in df.columns],
-                multi=True,
-            ),
-            html.Div(
-                id="xrange",
-                children=[html.P("Input Range")],
-            ),
-            html.P("Inset Y axis data"),
-            dcc.Dropdown(
-                id="yaxis-name",
-                options=[{"label": x, "value": x} for x in df.columns],
-                multi=True,
-            ),
-            html.Div(
-                id="yconstraint",
-                children=[html.P("Output Constraints")],
-            ),
-        ]
-    )
-
-
-@app.callback(
-    Output("output-datatable", "children"),
-    Input("upload-data", "contents"),
-    State("upload-data", "filename"),
-    State("upload-data", "last_modified"),
-)
-def update_output(list_of_contents, list_of_names, list_of_dates):
-    if list_of_contents is not None:
-        children = [
-            parse_contents(c, n, d)
-            for c, n, d in zip(list_of_contents, list_of_names, list_of_dates)
-        ]
-        return children
-
-
-@app.callback(
-    Output("xrange", "children"),
-    Input("xaxis-name", "value"),
-    State("xrange", "children"),
-)
-def set_range(x_data, current_range):
-    if x_data is not None:
-        current_range.append(
-            html.Div(
-                x_data[-1],
-                id={"type": "x_name_", "index": str(len(x_data))},
-            )
-        )
-        current_range.append(
-            dcc.Input(
-                id={"type": "x_min_", "index": str(len(x_data))},
-                type="number",
-                placeholder="Min",
-            )
-        )
-        current_range.append(
-            dcc.Input(
-                id={"type": "x_max_", "index": str(len(x_data))},
-                type="number",
-                placeholder="Max",
-            )
-        )
-        return current_range
-    else:
-        return dash.no_update
-
 
 # TODO: fix the bug where unselected yaxis remain in the section
 @app.callback(
@@ -309,7 +203,7 @@ def run_alse(nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_nam
 
         grid = algo.get_grid(20)  # TODO: allow customized resolution
 
-        new_pts = algo.next_test_points(5)
+        new_pts = algo.next_test_points(5)  # TODO: allow customized number of points
         new_pts_df = pd.DataFrame(new_pts.numpy())
         new_pts_df.columns = [i for i in x_names]
         for i in y_names:
@@ -399,6 +293,111 @@ def update_table(nbutton, new_data, old_data):
         old_df = pd.DataFrame(old_data)
         result = pd.concat([new_data, old_df], ignore_index=True, sort=False)
         return result.to_dict("records"), result.to_dict("records")
+
+
+def parse_contents(contents, filename, date):
+    content_type, content_string = contents.split(",")
+
+    decoded = base64.b64decode(content_string)
+    try:
+        if "csv" in filename:
+            # Assume that the user uploaded a CSV file
+            df = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
+        elif "xls" in filename:
+            # Assume that the user uploaded an excel file
+            df = pd.read_excel(io.BytesIO(decoded))
+    except Exception as e:
+        print(e)
+        return html.Div(["There was an error processing this file."])
+
+    return html.Div(
+        [
+            html.H5(filename),
+            html.H6(datetime.datetime.fromtimestamp(date)),
+            # html.Button(id="submit-button", children="Create Graph"),
+            html.Hr(),
+            dash_table.DataTable(
+                id="all_data",
+                data=df.to_dict("records"),
+                columns=[{"name": i, "id": i} for i in df.columns],
+                page_size=15,
+                export_format="xlsx",
+                export_headers="display",
+                merge_duplicate_headers=True,
+                style_data_conditional=[],
+            ),
+            dcc.Store(id="stored-data", data=df.to_dict("records")),
+            dcc.Store(id="model_predictions"),
+            html.Hr(),  # horizontal line
+            html.P("Insert X axis data"),
+            dcc.Dropdown(
+                id="xaxis-name",
+                options=[{"label": x, "value": x} for x in df.columns],
+                multi=True,
+            ),
+            html.Div(
+                id="xrange",
+                children=[html.P("Input Range")],
+            ),
+            html.P("Inset Y axis data"),
+            dcc.Dropdown(
+                id="yaxis-name",
+                options=[{"label": x, "value": x} for x in df.columns],
+                multi=True,
+            ),
+            html.Div(
+                id="yconstraint",
+                children=[html.P("Output Constraints")],
+            ),
+        ]
+    )
+
+
+@app.callback(
+    Output("output-datatable", "children"),
+    Input("upload-data", "contents"),
+    State("upload-data", "filename"),
+    State("upload-data", "last_modified"),
+)
+def update_output(list_of_contents, list_of_names, list_of_dates):
+    if list_of_contents is not None:
+        children = [
+            parse_contents(c, n, d)
+            for c, n, d in zip(list_of_contents, list_of_names, list_of_dates)
+        ]
+        return children
+
+
+@app.callback(
+    Output("xrange", "children"),
+    Input("xaxis-name", "value"),
+    State("xrange", "children"),
+)
+def set_range(x_data, current_range):
+    if x_data is not None:
+        current_range.append(
+            html.Div(
+                x_data[-1],
+                id={"type": "x_name_", "index": str(len(x_data))},
+            )
+        )
+        current_range.append(
+            dcc.Input(
+                id={"type": "x_min_", "index": str(len(x_data))},
+                type="number",
+                placeholder="Min",
+            )
+        )
+        current_range.append(
+            dcc.Input(
+                id={"type": "x_max_", "index": str(len(x_data))},
+                type="number",
+                placeholder="Max",
+            )
+        )
+        return current_range
+    else:
+        return dash.no_update
 
 
 # TODO: add user specified punchout_radius, number of points generated in one batch
