@@ -129,16 +129,7 @@ class alse:
         self.model_prediction = [
             model(self.grid).loc.detach() for model in self.list_of_models
         ]
-        return self.model_prediction
 
-    def get_overlap(self, resolution=20):
-        """
-        Returns:
-            Tensor: a list of True and False indicating if the self.grid points
-            are inside or outside of the boundaries
-        """
-        if self.model_prediction == None:
-            self.get_posterior_grid(resolution)
         in_boundary = [[]] * len(self.model_prediction)
         for i, (direction, value) in enumerate(self.y_constraints):
             if direction == "gt":
@@ -149,7 +140,7 @@ class alse:
                 overlap = in_boundary[0]
             else:
                 overlap = overlap & in_boundary[i]
-        return overlap
+        return self.model_prediction, overlap.float()
 
     def get_points_mask(self, points_y):
         in_boundary = [[]] * len(self.y_constraints)

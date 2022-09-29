@@ -167,6 +167,7 @@ def highlight_columns(x_data, y_data, curr_style):
 @app.callback(
     Output("suggest_data", "children"),
     Output("model_predictions", "data"),
+    Output("model_predictions_overlap", "data"),
     Input("button_runAL", "n_clicks"),
     State("stored-data", "data"),
     State(component_id={"type": "x_min_", "index": ALL}, component_property="value"),
@@ -209,21 +210,26 @@ def run_alse(nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_nam
         for i in y_names:
             new_pts_df[i] = "tbd"
         new_pts_df["id"] = f"batch {nbutton}"
-
-        return [
-            dash_table.DataTable(
-                id="suggest_table",
-                data=new_pts_df.to_dict("records"),
-                columns=[{"name": i, "id": i, "editable": False} for i in x_names]
-                + [{"name": i, "id": i, "editable": True} for i in y_names],
-                style_data={
-                    "whiteSpace": "normal",
-                    "height": "auto",
-                    "width": "auto",
-                },
-                editable=True,
-            )
-        ], algo.get_posterior_grid()
+        pos, overlap = algo.get_posterior_grid()
+        print(overlap)
+        return (
+            [
+                dash_table.DataTable(
+                    id="suggest_table",
+                    data=new_pts_df.to_dict("records"),
+                    columns=[{"name": i, "id": i, "editable": False} for i in x_names]
+                    + [{"name": i, "id": i, "editable": True} for i in y_names],
+                    style_data={
+                        "whiteSpace": "normal",
+                        "height": "auto",
+                        "width": "auto",
+                    },
+                    editable=True,
+                )
+            ],
+            pos,
+            overlap,
+        )
 
 
 @app.callback(
@@ -235,9 +241,10 @@ def run_alse(nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_nam
     State("xaxis-name", "value"),
     State("yaxis-name", "value"),
     State("model_predictions", "data"),
+    State("model_predictions_overlap", "data"),
     prevent_initial_call=True,
 )
-def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior):
+def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior, overlap):
     # assuming 3D!
     if nbutton > 0:
         dff = pd.DataFrame(data)
@@ -264,7 +271,7 @@ def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior):
                     x=pd.to_numeric(dff[xname[0]]),
                     y=pd.to_numeric(dff[xname[1]]),
                     z=pd.to_numeric(dff[xname[2]]),
-                    text=[f"{yname[i]} : {value}" for value in dff[yname[i]]],
+                    # text=[f"{yname[i]} : {value}" for value in dff[yname[i]]],
                     mode="markers",
                 )
             )
@@ -274,8 +281,24 @@ def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior):
                 scene=dict(
                     xaxis_title=xname[0], yaxis_title=xname[1], zaxis_title=xname[2]
                 ),
+                margin=dict(l=0, r=0, b=0, t=0),
             )
             fig_output.append(dcc.Graph(figure=fig))
+        fig = go.Figure(
+            go.Isosurface(
+                x=[*X][0].flatten(),
+                y=[*X][1].flatten(),
+                z=[*X][2].flatten(),
+                value=overlap,
+                isomin=0,
+                isomax=1,
+                surface_count=4,  # number of isosurfaces, 2 by default: only min and max
+                colorbar_nticks=4,  # colorbar ticks correspond to isosurface values
+                caps=dict(x_show=False, y_show=False),
+            )
+        )
+        fig_output.append(dcc.Graph(figure=fig))
+
         return fig_output
 
 
@@ -328,6 +351,7 @@ def parse_contents(contents, filename, date):
             ),
             dcc.Store(id="stored-data", data=df.to_dict("records")),
             dcc.Store(id="model_predictions"),
+            dcc.Store(id="model_predictions_overlap"),
             html.Hr(),  # horizontal line
             html.P("Insert X axis data"),
             dcc.Dropdown(
