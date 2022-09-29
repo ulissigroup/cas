@@ -18,7 +18,7 @@ def read_excel(file_path, x_names, y_names):
         output_param.append((torch.tensor((consolidated_data[:, f"{yname}"]))).unsqueeze(-1))
 
     X = torch.stack(tuple(input_param), -1)
-    return X, *output_param
+    return X.double(), *output_param
 
 
 def smooth_mask(x, a, eps=2e-3):
