@@ -162,6 +162,7 @@ class alse:
         for elem in list_elem:
             a = a & elem
         return a
+
     # Get the points on a "thick" overlap boundary
     def uncertain_boundary(self, uncertainty):
         list_lower_bound = []
@@ -170,27 +171,35 @@ class alse:
         i = 0
         model_predictions, _ = self.get_posterior_grid()
         for pred in model_predictions:
-            lower_bound = pred > (self.y_constraints[i][1] * (1-uncertainty))
+            lower_bound = pred > (self.y_constraints[i][1] * (1 - uncertainty))
             mid_bound = pred > (self.y_constraints[i][1])
-            upper_bound = pred > (self.y_constraints[i][1] * (1+uncertainty))
+            upper_bound = pred > (self.y_constraints[i][1] * (1 + uncertainty))
             list_lower_bound.append(lower_bound)
             list_mid_bound.append(mid_bound)
             list_upper_bound.append(upper_bound)
             i += 1
-        
+
         a = self._and_all_elem(list_lower_bound)
         b = self._and_all_elem(list_upper_bound)
         mid = self._and_all_elem(list_mid_bound)
 
         mask_1 = (a & ~mid).unsqueeze(-1)
         mask_2 = (mid & ~b).unsqueeze(-1)
-        inside = torch.masked_select(unnormalize(self.grid, self.x_bounds), mask_1).reshape(mask_1.sum(), self.grid.shape[1])
-        outside = torch.masked_select(unnormalize(self.grid, self.x_bounds), mask_2).reshape(mask_2.sum(), self.grid.shape[1])
-        return [inside, outside] 
-    
+        inside = torch.masked_select(
+            unnormalize(self.grid, self.x_bounds), mask_1
+        ).reshape(mask_1.sum(), self.grid.shape[1])
+        outside = torch.masked_select(
+            unnormalize(self.grid, self.x_bounds), mask_2
+        ).reshape(mask_2.sum(), self.grid.shape[1])
+        return [inside, outside]
+
     # Randomly select N points from the "thick" boundary
     def get_test_points(self, num_points, uncertainty=0.1):
         candidates = self.uncertain_boundary(uncertainty)
-        inside = candidates[0][torch.randint(candidates[0].shape[0], (num_points//2,))]
-        outside = candidates[1][torch.randint(candidates[1].shape[0], (num_points-num_points//2,))]
+        inside = candidates[0][
+            torch.randint(candidates[0].shape[0], (num_points // 2,))
+        ]
+        outside = candidates[1][
+            torch.randint(candidates[1].shape[0], (num_points - num_points // 2,))
+        ]
         return inside, outside

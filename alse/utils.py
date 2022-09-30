@@ -20,7 +20,7 @@ def read_excel(file_path, x_names, y_names):
         )
 
     X = torch.stack(tuple(input_param), -1)
-    return X, *output_param
+    return X.double(), *output_param
 
 
 def smooth_mask(x, a, eps=2e-3):
