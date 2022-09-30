@@ -155,3 +155,32 @@ class alse:
             else:
                 overlap = overlap & in_boundary[i]
         return in_boundary, overlap
+
+    # Logical & for all elements in a list
+    def _and_all_elem(self, list_elem):
+        a = list_elem[0]
+        for elem in list_elem:
+            a = a & elem
+        return a
+    # Get the points on a "thick" overlap boundary
+    def uncertain_boundary(self, uncertainty):
+        list_lower_bound = []
+        list_upper_bound = []
+        i = 0
+        model_predictions, _ = self.get_posterior_grid()
+        for pred in model_predictions:
+            lower_bound = pred > (self.y_constraints[i][1] * (1-uncertainty))
+            upper_bound = pred > (self.y_constraints[i][1] * (1+uncertainty))
+            list_lower_bound.append(lower_bound)
+            list_upper_bound.append(upper_bound)
+            i += 1
+        
+        a = self._and_all_elem(list_lower_bound)
+        b = self._and_all_elem(list_upper_bound)
+        mask = (a & ~b).unsqueeze(-1)
+        return torch.masked_select(unnormalize(self.grid, self.x_bounds), mask).reshape(mask.sum(), self.grid.shape[1])
+    
+    # Randomly select N points from the "thick" boundary
+    def get_test_points(self, num_points, uncertainty=0.1):
+        candidates = self.uncertain_boundary(uncertainty)
+        return candidates[torch.randint(candidates.shape[0], (num_points,))]
