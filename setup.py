@@ -4,7 +4,17 @@ except ImportError:
     from distutils.core import setup
 
 torch_min = "1.11.0"
-install_requires = [">=".join(["torch", torch_min]), "scikit-learn", "scipy", "gpytorch", "botorch"]
+install_requires = [
+    ">=".join(["torch", torch_min]),
+    "ipympl",
+    "scikit-learn",
+    "scipy",
+    "openpyxl",
+    "gpytorch",
+    "botorch",
+    "dash",
+    "dash_bootstrap_components",
+]
 setup(
     name="alse",
     version="0.0.1",

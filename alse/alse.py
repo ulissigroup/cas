@@ -44,9 +44,9 @@ class alse:
     # An n-dim grid for evaluating acq val over the parameter space
     # N controls the density per dim (careful, this is memory heavy)
     def grid(self, N, dim):
-        a = torch.meshgrid(dim*[torch.linspace(0, 1, N)])
+        a = torch.meshgrid(dim * [torch.linspace(0, 1, N)])
         b = [item.reshape(N**dim) for item in a]
-        return torch.stack(b,-1).unsqueeze(1)
+        return torch.stack(b, -1).unsqueeze(1)
 
     def next_test_points(self, num_points):
         # TODO how to automatically fill in the correct normalized bounds?
@@ -74,7 +74,7 @@ class alse:
             )
             list_of_models_temp = []
             train_x_temp = torch.cat((train_x_temp, x_next))
-            
+
             for i in range(len(self.model_type)):
                 y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
 
@@ -82,8 +82,10 @@ class alse:
                 list_of_models_temp.append(
                     fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
                 )
-        self.next_batch_test_point = unnormalize(train_x_temp[-num_points:], self.x_bounds)
+        self.next_batch_test_point = unnormalize(
+            train_x_temp[-num_points:], self.x_bounds
+        )
         return self.next_batch_test_point
-    
+
     def get_acq_val_grid(self, N, dim):
         return self.eci.forward(self.grid(N, dim))
