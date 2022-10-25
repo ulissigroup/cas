@@ -204,14 +204,13 @@ def run_alse(nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_nam
 
         grid = algo.get_grid(20)  # TODO: allow customized resolution
 
-        new_pts = algo.next_test_points(5)  # TODO: allow customized number of points
+        new_pts = algo.next_test_points(2)  # TODO: allow customized number of points
         new_pts_df = pd.DataFrame(new_pts.numpy())
         new_pts_df.columns = [i for i in x_names]
         for i in y_names:
             new_pts_df[i] = "tbd"
         new_pts_df["id"] = f"batch {nbutton}"
         pos, overlap = algo.get_posterior_grid()
-        print(overlap)
         return (
             [
                 dash_table.DataTable(
@@ -242,9 +241,12 @@ def run_alse(nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_nam
     State("yaxis-name", "value"),
     State("model_predictions", "data"),
     State("model_predictions_overlap", "data"),
+    State("suggest_data", "children"),
     prevent_initial_call=True,
 )
-def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior, overlap):
+def plot_predictions_3d(
+    nbutton, data, xmin, xmax, xname, yname, posterior, overlap, suggest_points
+):
     # assuming 3D!
     if nbutton > 0:
         dff = pd.DataFrame(data)
@@ -261,8 +263,8 @@ def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior, over
                     y=[*X][1].flatten(),
                     z=[*X][2].flatten(),
                     value=posterior[i],
-                    surface_count=7,  # number of isosurfaces, 2 by default: only min and max
-                    colorbar_nticks=7,  # colorbar ticks correspond to isosurface values
+                    surface_count=5,  # number of isosurfaces, 2 by default: only min and max
+                    colorbar_nticks=5,  # colorbar ticks correspond to isosurface values
                     caps=dict(x_show=False, y_show=False),
                 )
             )
@@ -271,8 +273,8 @@ def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior, over
                     x=pd.to_numeric(dff[xname[0]]),
                     y=pd.to_numeric(dff[xname[1]]),
                     z=pd.to_numeric(dff[xname[2]]),
-                    # text=[f"{yname[i]} : {value}" for value in dff[yname[i]]],
                     mode="markers",
+                    marker=dict(size=5),
                 )
             )
             fig.update_layout(
@@ -296,6 +298,37 @@ def plot_predictions_3d(nbutton, data, xmin, xmax, xname, yname, posterior, over
                 colorbar_nticks=4,  # colorbar ticks correspond to isosurface values
                 caps=dict(x_show=False, y_show=False),
             )
+        )
+        fig.add_trace(
+            go.Scatter3d(
+                x=pd.to_numeric(dff[xname[0]]),
+                y=pd.to_numeric(dff[xname[1]]),
+                z=pd.to_numeric(dff[xname[2]]),
+                mode="markers",
+                marker=dict(size=5),
+                name="Current data",
+            )
+        )
+        print(suggest_points[0]["props"]["data"])
+        fig.add_trace(
+            go.Scatter3d(
+                x=[i[xname[0]] for i in suggest_points[0]["props"]["data"]],
+                y=[i[xname[1]] for i in suggest_points[0]["props"]["data"]],
+                z=[i[xname[2]] for i in suggest_points[0]["props"]["data"]],
+                mode="markers",
+                marker=dict(size=5),
+                name="Suggested points",
+            )
+        )
+        fig.update_layout(
+            autosize=True,
+            showlegend=True,
+            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+            title=go.layout.Title(text="Printable Boundary"),
+            scene=dict(
+                xaxis_title=xname[0], yaxis_title=xname[1], zaxis_title=xname[2]
+            ),
+            margin=dict(l=0, r=0, b=0, t=0),
         )
         fig_output.append(dcc.Graph(figure=fig))
 
