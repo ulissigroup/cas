@@ -49,6 +49,11 @@ app.layout = html.Div(
         html.Hr(),  # horizontal line
         html.Center(
             [
+                dcc.Input(
+                    id="batch_size",
+                    type="number",
+                    placeholder="Number of new points".format("number"),
+                ),
                 dbc.Button(
                     "Run Bayesian Optimization",
                     id="button_runAL",
@@ -180,9 +185,12 @@ def highlight_columns(x_data, y_data, curr_style):
     ),
     State("xaxis-name", "value"),
     State("yaxis-name", "value"),
+    State("batch_size", "value"),
     prevent_initial_call=True,
 )
-def run_alse(nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_names):
+def run_alse(
+    nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_names, batch_size
+):
     if nbutton > 0:
         dff = pd.DataFrame(data)
         input_param = []
@@ -204,7 +212,9 @@ def run_alse(nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_nam
 
         grid = algo.get_grid(20)  # TODO: allow customized resolution
 
-        new_pts = algo.next_test_points(2)  # TODO: allow customized number of points
+        new_pts = algo.next_test_points(
+            batch_size
+        )  # TODO: allow customized number of points
         new_pts_df = pd.DataFrame(new_pts.numpy())
         new_pts_df.columns = [i for i in x_names]
         for i in y_names:
@@ -279,13 +289,20 @@ def plot_predictions_3d(
             )
             fig.update_layout(
                 autosize=True,
-                title=go.layout.Title(text=yname[i]),
+                title={
+                    "text": yname[i],
+                    "y": 0.99,
+                    "x": 0.5,
+                    "xanchor": "center",
+                    "yanchor": "top",
+                },
                 scene=dict(
                     xaxis_title=xname[0], yaxis_title=xname[1], zaxis_title=xname[2]
                 ),
                 margin=dict(l=0, r=0, b=0, t=0),
             )
             fig_output.append(dcc.Graph(figure=fig))
+            fig_output.append(html.Hr())
         fig = go.Figure(
             go.Isosurface(
                 x=[*X][0].flatten(),
@@ -309,7 +326,6 @@ def plot_predictions_3d(
                 name="Current data",
             )
         )
-        print(suggest_points[0]["props"]["data"])
         fig.add_trace(
             go.Scatter3d(
                 x=[i[xname[0]] for i in suggest_points[0]["props"]["data"]],
@@ -324,7 +340,13 @@ def plot_predictions_3d(
             autosize=True,
             showlegend=True,
             legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
-            title=go.layout.Title(text="Printable Boundary"),
+            title={
+                "text": "Printable Boundary",
+                "y": 0.99,
+                "x": 0.5,
+                "xanchor": "center",
+                "yanchor": "top",
+            },
             scene=dict(
                 xaxis_title=xname[0], yaxis_title=xname[1], zaxis_title=xname[2]
             ),
