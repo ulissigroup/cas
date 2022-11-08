@@ -67,8 +67,37 @@ class alse:
             dim=1,
         )
         return self.grid
+    def next_test_points(self):
 
-    def next_test_points(self, num_points):
+        model_list = ModelListGP(*[model for model in self.list_of_models])
+        self.eci = ExpectedCoverageImprovement(
+            model=model_list,
+            constraints=self.y_constraints,
+            punchout_radius=self.punchout_radius,
+            bounds=self.normalized_bounds,
+            num_samples=512,
+        )
+        x_next, _ = optimize_acqf(
+            acq_function=self.eci,
+            bounds=self.normalized_bounds,
+            q=1,
+            num_restarts=10,
+            raw_samples=512,
+        )
+
+        self.normalized_x = torch.cat((self.normalized_x, x_next))
+        for i in range(len(self.model_type)):
+            y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
+
+            self.train_y[i] = torch.cat((self.train_y[i], y_on_x_next))
+
+        self.next_batch_test_point = unnormalize(
+            self.normalized_x, self.x_bounds
+        )
+
+        return self.next_batch_test_point
+        
+    # def next_test_points(self, num_points):
 
         list_of_models_temp = self.list_of_models.copy()
         train_x_temp = self.normalized_x.clone().detach()
