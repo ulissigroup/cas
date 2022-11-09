@@ -67,10 +67,67 @@ class alse:
             dim=1,
         )
         return self.grid
-    def next_test_points(self):
 
-        model_list = ModelListGP(*[model for model in self.list_of_models])
-        self.eci = ExpectedCoverageImprovement(
+    # def next_test_points(self):
+
+    #     model_list = ModelListGP(*[model for model in self.list_of_models])
+    #     self.eci = ExpectedCoverageImprovement(
+    #         model=model_list,
+    #         constraints=self.y_constraints,
+    #         punchout_radius=self.punchout_radius,
+    #         bounds=self.normalized_bounds,
+    #         num_samples=512,
+    #     )
+    #     x_next, _ = optimize_acqf(
+    #         acq_function=self.eci,
+    #         bounds=self.normalized_bounds,
+    #         q=1,
+    #         num_restarts=10,
+    #         raw_samples=512,
+    #     )
+
+    #     self.normalized_x = torch.cat((self.normalized_x, x_next))
+    #     for i in range(len(self.model_type)):
+    #         y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
+
+    #         self.train_y[i] = torch.cat((self.train_y[i], y_on_x_next))
+
+    #     self.next_batch_test_point = unnormalize(
+    #         self.normalized_x, self.x_bounds
+    #     )
+
+    #     return self.next_batch_test_point
+
+    def next_test_points(self, num_points):
+
+        list_of_models_temp = self.list_of_models.copy()
+        train_x_temp = self.normalized_x.clone().detach()
+        train_y_temp = self.train_y.copy()
+
+        for _ in range(num_points):
+            x_next = self._get_next_test_point(list_of_models_temp)
+            # list_of_models_temp = []
+            train_x_temp = torch.cat((train_x_temp, x_next))
+            for i in range(len(self.model_type)):
+                for param_name, param in list_of_models_temp[i].named_parameters():
+                    print(f"Parameter name: {param_name:42} value = {param}")
+                list_of_models_temp[i].eval()
+                y_on_x_next = list_of_models_temp[i](x_next).loc.unsqueeze(-1)
+                train_y_temp[i] = torch.cat((train_y_temp[i], y_on_x_next))
+                list_of_models_temp[i] = fit_gp_model(
+                    self.model_type[i], train_x_temp, train_y_temp[i]
+                )
+                for param_name, param in list_of_models_temp[i].named_parameters():
+                    print(f"NEW Parameter name: {param_name:42} value = {param}")
+            # print(list_of_models_temp)
+        self.next_batch_test_point = unnormalize(
+            train_x_temp[-num_points:], self.x_bounds
+        )
+        return self.next_batch_test_point
+
+    def _get_next_test_point(self, list_of_model):
+        model_list = ModelListGP(*[model for model in list_of_model])
+        eci = ExpectedCoverageImprovement(
             model=model_list,
             constraints=self.y_constraints,
             punchout_radius=self.punchout_radius,
@@ -78,62 +135,13 @@ class alse:
             num_samples=512,
         )
         x_next, _ = optimize_acqf(
-            acq_function=self.eci,
+            acq_function=eci,
             bounds=self.normalized_bounds,
             q=1,
             num_restarts=10,
             raw_samples=512,
         )
-
-        self.normalized_x = torch.cat((self.normalized_x, x_next))
-        for i in range(len(self.model_type)):
-            y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
-
-            self.train_y[i] = torch.cat((self.train_y[i], y_on_x_next))
-
-        self.next_batch_test_point = unnormalize(
-            self.normalized_x, self.x_bounds
-        )
-
-        return self.next_batch_test_point
-        
-    # def next_test_points(self, num_points):
-
-        list_of_models_temp = self.list_of_models.copy()
-        train_x_temp = self.normalized_x.clone().detach()
-        train_y_temp = self.train_y.copy()
-
-        for _ in range(num_points):
-            model_list = ModelListGP(*[model for model in list_of_models_temp])
-            self.eci = ExpectedCoverageImprovement(
-                model=model_list,
-                constraints=self.y_constraints,
-                punchout_radius=self.punchout_radius,
-                bounds=self.normalized_bounds,
-                num_samples=512,
-            )
-            x_next, _ = optimize_acqf(
-                acq_function=self.eci,
-                bounds=self.normalized_bounds,
-                q=1,
-                num_restarts=10,
-                raw_samples=512,
-                # fixed_features_list=[{2: 0, 2: 1, 3: 0.9}]
-            )
-            list_of_models_temp = []
-            train_x_temp = torch.cat((train_x_temp, x_next))
-
-            for i in range(len(self.model_type)):
-                y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
-
-                train_y_temp[i] = torch.cat((train_y_temp[i], y_on_x_next))
-                list_of_models_temp.append(
-                    fit_gp_model(self.model_type[i], train_x_temp, train_y_temp[i])
-                )
-        self.next_batch_test_point = unnormalize(
-            train_x_temp[-num_points:], self.x_bounds
-        )
-        return self.next_batch_test_point
+        return x_next
 
     def get_acq_val_grid(self, resolution=20):
         for i in self.list_of_models:
