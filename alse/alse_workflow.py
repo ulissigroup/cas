@@ -109,17 +109,12 @@ class alse:
             # list_of_models_temp = []
             train_x_temp = torch.cat((train_x_temp, x_next))
             for i in range(len(self.model_type)):
-                for param_name, param in list_of_models_temp[i].named_parameters():
-                    print(f"Parameter name: {param_name:42} value = {param}")
                 list_of_models_temp[i].eval()
                 y_on_x_next = list_of_models_temp[i](x_next).loc.unsqueeze(-1)
                 train_y_temp[i] = torch.cat((train_y_temp[i], y_on_x_next))
                 list_of_models_temp[i] = fit_gp_model(
                     self.model_type[i], train_x_temp, train_y_temp[i]
                 )
-                for param_name, param in list_of_models_temp[i].named_parameters():
-                    print(f"NEW Parameter name: {param_name:42} value = {param}")
-            # print(list_of_models_temp)
         self.next_batch_test_point = unnormalize(
             train_x_temp[-num_points:], self.x_bounds
         )
