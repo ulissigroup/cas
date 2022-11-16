@@ -229,9 +229,9 @@ class alse:
     def get_test_points(self, num_points, uncertainty=0.1):
         candidates = self.uncertain_boundary(uncertainty)
         inside = candidates[0][
-            torch.randint(candidates[0].shape[0], (num_points // 2,))
+            torch.randperm(candidates[0].shape[0])[: num_points // 2]
         ]
         outside = candidates[1][
-            torch.randint(candidates[1].shape[0], (num_points - num_points // 2,))
+            torch.randperm(candidates[1].shape[0])[: num_points // 2]
         ]
         return inside, outside
