@@ -1,10 +1,12 @@
 import torch
 import copy
-
+import numpy as np
 import pandas
 
 
-def read_excel(file_path, x_names, y_names):
+def read_excel(file_path, x_names, y_names, y_round=None):
+    if y_round is None:
+        y_round = [8] * len(y_names)
     # NaN to 0
     consolidated_data = pandas.read_excel(f"{file_path}").fillna(0).loc
     # Input parameters
@@ -14,11 +16,9 @@ def read_excel(file_path, x_names, y_names):
 
     # Output parameters
     output_param = []
-    for yname in y_names:
-        output_param.append(
-            (torch.tensor((consolidated_data[:, f"{yname}"]))).unsqueeze(-1)
-        )
-
+    for i, yname in enumerate(y_names):
+        y_val = torch.tensor((consolidated_data[:, f"{yname}"])).unsqueeze(-1)
+        output_param.append(torch.round(y_val, decimals=y_round[i]))
     X = torch.stack(tuple(input_param), -1)
     return X.float(), *output_param
 
@@ -50,13 +50,33 @@ def identify_samples_which_satisfy_constraints(X, constraints):
     return successful
 
 
+def get_random_points(bounds, num_points):
+    """Generate random points within the given bounds
+
+    Args:
+        bounds (torch.tensor):
+        num_points (int): number of points to generate
+
+    Returns:
+        _type_: _description_
+    """
+    rand_input = unnormalize(torch.rand(num_points, bounds.shape[1]), bounds)
+    return rand_input
+
+
 # Transform each parameter individually to [0, 1]
 def normalize(x, bounds):
     """
-    x: torch.tensor whose shape is n x d, where n is the number of points,
+    Args:
+        x (torch.tensor): input to be normalized. The shape of
+        the tensoris n x d, where n is the number of points,
         and d is the number of dimensions
-    bounds: torch.tensor whose first row is the lower bounds
-        and second row is the upper bounds"""
+        bounds (torch.tensor): first row is the lower bounds
+        and second row is the upper bounds
+
+    Returns:
+        torch.tensor: normalized x
+    """
     x_copy = x.clone().detach()
     for i in range(x_copy.shape[1]):
         # Linear scaling for each parameter
@@ -66,11 +86,40 @@ def normalize(x, bounds):
 
 # Undo the transform step
 def unnormalize(x, bounds):
-    """x: torch.tensor whose shape is n x d, where n is the number of points,
+    """
+    Args:
+        x (torch.tensor): input to be unnormalized. The shape of
+        the tensoris n x d, where n is the number of points,
         and d is the number of dimensions
-    bounds: torch.tensor whose first row is the lower bounds
-        and second row is the upper bounds"""
+        bounds (torch.tensor): first row is the lower bounds
+        and second row is the upper bounds
+
+    Returns:
+        torch.tensor: unnormalized x
+    """
     x_copy = x.clone().detach()
     for i in range(x_copy.shape[1]):
         x_copy[:, i] = x_copy[:, i] * (bounds[1][i] - bounds[0][i]) + bounds[0][i]
     return x_copy
+
+
+def get_hatch_xa(width, height):
+    """Calculate the hatch spacing and cross sectional area given the width and height
+
+    Args:
+        width (np.array): single-track width
+        height (np.array): single-track height
+
+    Returns:
+        hatch: hatch spacing
+        est_area: estimated cross sectional area
+    """
+    term_1 = np.square((np.square(width / 2) + height * height) / (2 * height))
+    term_2 = np.arcsin(width * height / (np.square(width / 2) + height * height))
+    term_3 = -1 * (width / 2) * (np.square(width / 2) - height * height) / (2 * height)
+    hatch = (term_1 * term_2 + term_3) / height
+
+    overlap_frac = (width - hatch) / width
+    est_area = hatch * height
+
+    return hatch, est_area

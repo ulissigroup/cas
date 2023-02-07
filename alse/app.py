@@ -195,7 +195,7 @@ def run_alse(
         dff = pd.DataFrame(data)
         input_param = []
         for xname in x_names:
-            input_param.append(torch.tensor(dff[xname]))
+            input_param.append(torch.tensor(pd.to_numeric(dff[xname])))
         output_param = []
         for yname in y_names:
             output_param.append(torch.tensor(pd.to_numeric(dff[yname])).unsqueeze(-1))
@@ -226,7 +226,7 @@ def run_alse(
                 dash_table.DataTable(
                     id="suggest_table",
                     data=new_pts_df.to_dict("records"),
-                    columns=[{"name": i, "id": i, "editable": False} for i in x_names]
+                    columns=[{"name": i, "id": i, "editable": True} for i in x_names]
                     + [{"name": i, "id": i, "editable": True} for i in y_names],
                     style_data={
                         "whiteSpace": "normal",

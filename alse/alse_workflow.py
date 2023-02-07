@@ -18,9 +18,9 @@ tkwargs = {
 
 class alse:
     def __init__(self, train_x, x_bounds, train_y, y_constraints, punchout_radius=0.1):
-        self.train_x = train_x
+        self.train_x = train_x.float()
         self.x_bounds = x_bounds
-        self.train_y = train_y
+        self.train_y = [i.float() for i in train_y]
         self.y_constraints = y_constraints
         self.punchout_radius = punchout_radius
         self.grid = None
@@ -55,7 +55,7 @@ class alse:
         )
 
     def get_grid(self, resolution=20):
-        [*X] = torch.meshgrid(
+        self.meshgrid = torch.meshgrid(
             [
                 torch.linspace(0, 1, resolution, **tkwargs)
                 for _ in range(self.train_x.shape[1])
@@ -63,40 +63,13 @@ class alse:
             indexing="xy",
         )
         self.grid = torch.stack(
-            [torch.reshape(i, (resolution ** self.train_x.shape[1],)) for i in [*X]],
+            [
+                torch.reshape(i, (resolution ** self.train_x.shape[1],))
+                for i in self.meshgrid
+            ],
             dim=1,
         )
         return self.grid
-
-    # def next_test_points(self):
-
-    #     model_list = ModelListGP(*[model for model in self.list_of_models])
-    #     self.eci = ExpectedCoverageImprovement(
-    #         model=model_list,
-    #         constraints=self.y_constraints,
-    #         punchout_radius=self.punchout_radius,
-    #         bounds=self.normalized_bounds,
-    #         num_samples=512,
-    #     )
-    #     x_next, _ = optimize_acqf(
-    #         acq_function=self.eci,
-    #         bounds=self.normalized_bounds,
-    #         q=1,
-    #         num_restarts=10,
-    #         raw_samples=512,
-    #     )
-
-    #     self.normalized_x = torch.cat((self.normalized_x, x_next))
-    #     for i in range(len(self.model_type)):
-    #         y_on_x_next = model_list.models[i](x_next).loc.unsqueeze(-1)
-
-    #         self.train_y[i] = torch.cat((self.train_y[i], y_on_x_next))
-
-    #     self.next_batch_test_point = unnormalize(
-    #         self.normalized_x, self.x_bounds
-    #     )
-
-    #     return self.next_batch_test_point
 
     def next_test_points(self, num_points):
 
@@ -106,7 +79,6 @@ class alse:
 
         for _ in range(num_points):
             x_next = self._get_next_test_point(list_of_models_temp)
-            # list_of_models_temp = []
             train_x_temp = torch.cat((train_x_temp, x_next))
             for i in range(len(self.model_type)):
                 list_of_models_temp[i].eval()
@@ -145,6 +117,19 @@ class alse:
             self.get_grid(resolution)
         return self.eci.forward(self.grid.unsqueeze(1))
 
+    def get_posterior(self, x):
+        """_summary_
+
+        Args:
+            x (torch.tensor): normalized input vector
+
+        Returns:
+            _type_: _description_
+        """
+        for i in self.list_of_models:
+            i.eval()
+        return [model(x).loc.detach() for model in self.list_of_models]
+
     def get_posterior_grid(self, resolution=20):
         """_summary_
 
@@ -153,35 +138,29 @@ class alse:
             of length d, where n is the number of output, and d is the
             number of
         """
-        for i in self.list_of_models:
-            i.eval()
-
         if self.grid == None:
             self.get_grid(resolution)
-        self.model_prediction = [
-            model(self.grid).loc.detach() for model in self.list_of_models
-        ]
-
-        in_boundary = [[]] * len(self.model_prediction)
+        model_prediction = self.get_posterior(self.grid)
+        in_boundary = [[]] * len(model_prediction)
         for i, (direction, value) in enumerate(self.y_constraints):
             if direction == "gt":
-                in_boundary[i] = self.model_prediction[i] > value
+                in_boundary[i] = model_prediction[i] >= value
             else:
-                in_boundary[i] = self.model_prediction[i] < value
+                in_boundary[i] = model_prediction[i] <= value
             if i == 0:
                 overlap = in_boundary[0]
             else:
                 overlap = overlap & in_boundary[i]
-        return self.model_prediction, overlap.float()
+        return model_prediction, overlap.float()
 
     def get_points_mask(self, points_y):
         in_boundary = [[]] * len(self.y_constraints)
 
         for i, (direction, value) in enumerate(self.y_constraints):
             if direction == "gt":
-                in_boundary[i] = points_y[i].flatten() > value
+                in_boundary[i] = points_y[i].flatten() >= value
             else:
-                in_boundary[i] = points_y[i].flatten() < value
+                in_boundary[i] = points_y[i].flatten() <= value
             if i == 0:
                 overlap = in_boundary[0]
             else:
@@ -235,3 +214,7 @@ class alse:
             torch.randperm(candidates[1].shape[0])[: num_points // 2]
         ]
         return inside, outside
+
+    def fit_new_points(self, new_x, new_y):
+
+        return
