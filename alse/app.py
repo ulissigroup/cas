@@ -112,10 +112,7 @@ app.layout = html.Div(
 def set_constraint(y_data, current_cons):
     if y_data is not None:
         current_cons.append(
-            html.Div(
-                y_data[-1],
-                id={"type": "y_name_", "index": str(len(y_data))},
-            )
+            html.Div(y_data[-1], id={"type": "y_name_", "index": str(len(y_data))},)
         )
         current_cons.append(
             html.Div(
@@ -414,20 +411,14 @@ def parse_contents(contents, filename, date):
                 options=[{"label": x, "value": x} for x in df.columns],
                 multi=True,
             ),
-            html.Div(
-                id="xrange",
-                children=[html.P("Input Range")],
-            ),
+            html.Div(id="xrange", children=[html.P("Input Range")],),
             html.P("Inset Y axis data"),
             dcc.Dropdown(
                 id="yaxis-name",
                 options=[{"label": x, "value": x} for x in df.columns],
                 multi=True,
             ),
-            html.Div(
-                id="yconstraint",
-                children=[html.P("Output Constraints")],
-            ),
+            html.Div(id="yconstraint", children=[html.P("Output Constraints")],),
         ]
     )
 
@@ -455,10 +446,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 def set_range(x_data, current_range):
     if x_data is not None:
         current_range.append(
-            html.Div(
-                x_data[-1],
-                id={"type": "x_name_", "index": str(len(x_data))},
-            )
+            html.Div(x_data[-1], id={"type": "x_name_", "index": str(len(x_data))},)
         )
         current_range.append(
             dcc.Input(

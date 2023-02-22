@@ -9,13 +9,7 @@ from alse.utils import smooth_mask, smooth_box_mask
 
 class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
-        self,
-        model,
-        constraints,
-        punchout_radius,
-        bounds,
-        num_samples=512,
-        **kwargs,
+        self, model, constraints, punchout_radius, bounds, num_samples=512, **kwargs,
     ):
         """Expected Coverage Improvement (q=1 required, analytic)
 
