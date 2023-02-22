@@ -20,7 +20,7 @@ def read_excel(file_path, x_names, y_names, y_round=None):
         y_val = torch.tensor((consolidated_data[:, f"{yname}"])).unsqueeze(-1)
         output_param.append(torch.round(y_val, decimals=y_round[i]))
     X = torch.stack(tuple(input_param), -1)
-    return X.float(), *output_param
+    return X.float(), output_param
 
 
 def smooth_mask(x, a, eps=2e-3):
@@ -44,9 +44,7 @@ def identify_samples_which_satisfy_constraints(X, constraints):
         ...,
     ]
     direction, value = constraints
-    successful[...,] = (
-        these_X < value if direction == "lt" else these_X > value
-    )
+    successful[...,] = these_X < value if direction == "lt" else these_X > value
     return successful
 
 
@@ -63,9 +61,12 @@ def get_random_points(bounds, dim):
     if type(dim) is int:
         return unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds)
     elif type(dim) is tuple:
-        return [unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds) for _ in range(dim[1])]
+        return [
+            unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds)
+            for _ in range(dim[1])
+        ]
     else:
-        raise Exception('dim is either an int or a tuple')
+        raise Exception("dim is either an int or a tuple")
 
 
 # Transform each parameter individually to [0, 1]
