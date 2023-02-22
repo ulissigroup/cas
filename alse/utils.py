@@ -50,18 +50,22 @@ def identify_samples_which_satisfy_constraints(X, constraints):
     return successful
 
 
-def get_random_points(bounds, num_points):
+def get_random_points(bounds, dim):
     """Generate random points within the given bounds
 
     Args:
         bounds (torch.tensor):
-        num_points (int): number of points to generate
+        dim (int or tuple): dimension of points to generate
 
     Returns:
         _type_: _description_
     """
-    rand_input = unnormalize(torch.rand(num_points, bounds.shape[1]), bounds)
-    return rand_input
+    if type(dim) is int:
+        return unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds)
+    elif type(dim) is tuple:
+        return [unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds) for _ in range(dim[1])]
+    else:
+        raise Exception('dim is either an int or a tuple')
 
 
 # Transform each parameter individually to [0, 1]
