@@ -59,7 +59,7 @@ def get_random_points(bounds, dim):
         _type_: _description_
     """
     if type(dim) is int:
-        return unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds)
+        return unnormalize(torch.rand(dim, bounds.shape[1]), bounds)
     elif type(dim) is tuple:
         return [
             unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds)
