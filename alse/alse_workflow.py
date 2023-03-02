@@ -8,7 +8,7 @@ from alse.eci import ExpectedCoverageImprovement
 from alse.utils import normalize, unnormalize
 from botorch.optim import optimize_acqf
 import copy
-from botorch.sampling.samplers import SobolQMCNormalSampler
+# from botorch.sampling.samplers import SobolQMCNormalSampler
 
 tkwargs = {
     "device": torch.device("cpu"),
