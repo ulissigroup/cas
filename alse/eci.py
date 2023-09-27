@@ -9,7 +9,13 @@ from alse.utils import smooth_mask, smooth_box_mask
 
 class ExpectedCoverageImprovement(MCAcquisitionFunction):
     def __init__(
-        self, model, constraints, punchout_radius, bounds, num_samples=512, **kwargs,
+        self,
+        model,
+        constraints,
+        punchout_radius,
+        bounds,
+        num_samples=512,
+        **kwargs,
     ):
         """Expected Coverage Improvement (q=1 required, analytic)
 
@@ -114,5 +120,10 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         base_point_mask = self._get_base_point_mask(ball_around_X).prod(dim=-1)
         prob = self._estimate_probabilities_of_satisfaction_at_points(ball_around_X)
         masked_prob = prob * domain_mask * base_point_mask
+        # print(X)
+        # print("prob", torch.mean(prob, axis = 1))
+        # print("domain", torch.mean(domain_mask, axis = 1))
+        # print("base point", torch.mean(base_point_mask, axis = 1))
         y = masked_prob.sum(dim=-1) / num_points_in_integral
+        # print('y', y)
         return y

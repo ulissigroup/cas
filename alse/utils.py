@@ -4,11 +4,11 @@ import numpy as np
 import pandas
 
 
-def read_excel(file_path, x_names, y_names, y_round=None):
+def read_excel(file_path, x_names, y_names, y_round=None, sheet_name=0):
     if y_round is None:
         y_round = [8] * len(y_names)
     # NaN to 0
-    consolidated_data = pandas.read_excel(f"{file_path}").fillna(0).loc
+    consolidated_data = pandas.read_excel(f"{file_path}", sheet_name).fillna(0).loc
     # Input parameters
     input_param = []
     for xname in x_names:
@@ -44,11 +44,13 @@ def identify_samples_which_satisfy_constraints(X, constraints):
         ...,
     ]
     direction, value = constraints
-    successful[...,] = these_X < value if direction == "lt" else these_X > value
+    successful[...,] = (
+        these_X < value if direction == "lt" else these_X > value
+    )
     return successful
 
 
-def get_random_points(bounds, dim):
+def get_random_points(bounds, dim, seed=42):
     """Generate random points within the given bounds
 
     Args:
@@ -58,8 +60,9 @@ def get_random_points(bounds, dim):
     Returns:
         _type_: _description_
     """
+    torch.manual_seed(seed)
     if type(dim) is int:
-        return unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds)
+        return unnormalize(torch.rand(dim, bounds.shape[1]), bounds)
     elif type(dim) is tuple:
         return [
             unnormalize(torch.rand(dim[0], bounds.shape[1]), bounds)

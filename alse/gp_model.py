@@ -58,7 +58,7 @@ def fit_gp_model(model_type, X, Y, **kwargs):
     optimizer = torch.optim.Adam(model.parameters(), lr=float(kwargs.get("lr", "0.1")))
     mll = ExactMarginalLogLikelihood(likelihood, model)
 
-    for _ in range(int(kwargs.get("num_epoch", "100"))):
+    for _ in range(int(kwargs.get("num_epoch", "500"))):
         optimizer.zero_grad()
         output = model(X)
         # TODO: move this to model initialization step?
