@@ -15,5 +15,5 @@ pip install -e .
   python app.py
   ```
   
-- Or check out the example [python notebook](https://github.com/ulissigroup/cas/blob/main/example/test_cas.ipynb)
+- Or check out the example [python notebook](https://github.com/ulissigroup/cas/blob/main/example/temp.ipynb)
 
