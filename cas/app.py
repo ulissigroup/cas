@@ -14,7 +14,7 @@ from dash import dash_table
 import plotly.express as px
 import torch
 import pandas as pd
-from alse.alse_workflow import alse
+from cas.cas_workflow import cas
 from plotly.subplots import make_subplots
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
@@ -188,7 +188,7 @@ def highlight_columns(x_data, y_data, curr_style):
     State("batch_size", "value"),
     prevent_initial_call=True,
 )
-def run_alse(
+def run_cas(
     nbutton, data, x_min, x_max, y_cons_str, y_cons_int, x_names, y_names, batch_size
 ):
     if nbutton > 0:
@@ -204,7 +204,7 @@ def run_alse(
             (y_cons_str[i], float(y_cons_int[i])) for i in range(len(y_cons_str))
         ]
         bounds = torch.tensor([[float(i) for i in x_min], [float(i) for i in x_max]])
-        algo = alse(X, bounds, output_param, constraints)
+        algo = cas(X, bounds, output_param, constraints)
         # TODO: store the posterior for all 3 outputs
         algo.initialize_model(
             ["reg"] * len(y_names)

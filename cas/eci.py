@@ -4,7 +4,7 @@ from botorch.acquisition.monte_carlo import MCAcquisitionFunction
 from botorch.acquisition.objective import IdentityMCObjective
 from botorch.utils.sampling import sample_hypersphere
 from botorch.utils.transforms import t_batch_mode_transform
-from alse.utils import smooth_mask, smooth_box_mask
+from cas.utils import smooth_mask, smooth_box_mask
 
 
 class ExpectedCoverageImprovement(MCAcquisitionFunction):

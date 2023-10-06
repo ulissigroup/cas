@@ -3,9 +3,9 @@ from botorch.models import SingleTaskGP, ModelListGP
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from gpytorch.constraints import Interval
 from botorch.fit import fit_gpytorch_model
-from alse.gp_model import fit_gp_model
-from alse.eci import ExpectedCoverageImprovement
-from alse.utils import normalize, unnormalize
+from cas.gp_model import fit_gp_model
+from cas.eci import ExpectedCoverageImprovement
+from cas.utils import normalize, unnormalize
 from botorch.optim import optimize_acqf
 import copy
 # from botorch.sampling.samplers import SobolQMCNormalSampler
@@ -16,7 +16,7 @@ tkwargs = {
 }
 
 
-class alse:
+class cas:
     def __init__(self, train_x, x_bounds, train_y, y_constraints, punchout_radius=0.1):
         self.train_x = train_x.float()
         self.x_bounds = x_bounds

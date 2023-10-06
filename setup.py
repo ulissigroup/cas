@@ -16,8 +16,8 @@ install_requires = [
     "dash_bootstrap_components",
 ]
 setup(
-    name="alse",
+    name="cas",
     version="0.0.1",
-    packages=["alse"],
+    packages=["cas"],
     install_requires=install_requires,
 )
