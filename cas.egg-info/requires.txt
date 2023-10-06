@@ -1,9 +1,0 @@
-torch>=1.11.0
-ipympl
-scikit-learn
-scipy
-openpyxl
-gpytorch
-botorch
-dash
-dash_bootstrap_components
