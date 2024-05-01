@@ -96,7 +96,7 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
                     )[:, 1, :].mean(0)
                     probabilities[i] = prob_of_one_point
                 final_prob = final_prob * probabilities
-            else:
+            elif model.model_type == "reg":
                 posterior = model.posterior(X=points)
                 mus, sigma2s = posterior.mean, posterior.variance
                 dist = torch.distributions.normal.Normal(mus, sigma2s.sqrt())
@@ -120,10 +120,6 @@ class ExpectedCoverageImprovement(MCAcquisitionFunction):
         base_point_mask = self._get_base_point_mask(ball_around_X).prod(dim=-1)
         prob = self._estimate_probabilities_of_satisfaction_at_points(ball_around_X)
         masked_prob = prob * domain_mask * base_point_mask
-        # print(X)
-        # print("prob", torch.mean(prob, axis = 1))
-        # print("domain", torch.mean(domain_mask, axis = 1))
-        # print("base point", torch.mean(base_point_mask, axis = 1))
+
         y = masked_prob.sum(dim=-1) / num_points_in_integral
-        # print('y', y)
         return y

@@ -5,9 +5,10 @@ from gpytorch.constraints import Interval
 from botorch.fit import fit_gpytorch_model
 from cas.gp_model import fit_gp_model
 from cas.eci import ExpectedCoverageImprovement
-from cas.utils import normalize, unnormalize
+from cas.utils import normalize, unnormalize, get_points_mask
 from botorch.optim import optimize_acqf
 import copy
+
 # from botorch.sampling.samplers import SobolQMCNormalSampler
 
 tkwargs = {
@@ -82,7 +83,12 @@ class cas:
             train_x_temp = torch.cat((train_x_temp, x_next))
             for i in range(len(self.model_type)):
                 list_of_models_temp[i].eval()
-                y_on_x_next = list_of_models_temp[i](x_next).loc.unsqueeze(-1)
+                if list_of_models_temp[i].model_type == "class":
+                    y_on_x_next = (
+                        list_of_models_temp[i](x_next).loc.max(0)[1].unsqueeze(-1)
+                    )
+                elif list_of_models_temp[i].model_type == "reg":
+                    y_on_x_next = list_of_models_temp[i](x_next).loc.unsqueeze(-1)
                 train_y_temp[i] = torch.cat((train_y_temp[i], y_on_x_next))
                 list_of_models_temp[i] = fit_gp_model(
                     self.model_type[i], train_x_temp, train_y_temp[i]
@@ -126,9 +132,14 @@ class cas:
         Returns:
             _type_: _description_
         """
-        for i in self.list_of_models:
-            i.eval()
-        return [model(x).loc.detach() for model in self.list_of_models]
+        pos = torch.empty((len(self.list_of_models), x.shape[0]))
+        for i, model in enumerate(self.list_of_models):
+            model.eval()
+            if model.model_type == "class":
+                pos[i] = model(x).loc.max(0)[1].detach()
+            elif model.model_type == "reg":
+                pos[i] = model(x).loc.detach()
+        return pos.T
 
     def get_posterior_grid(self, resolution=20):
         """_summary_
@@ -141,31 +152,22 @@ class cas:
         if self.grid == None:
             self.get_grid(resolution)
         model_prediction = self.get_posterior(self.grid)
-        in_boundary = [[]] * len(model_prediction)
-        for i, (direction, value) in enumerate(self.y_constraints):
-            if direction == "gt":
-                in_boundary[i] = model_prediction[i] >= value
-            else:
-                in_boundary[i] = model_prediction[i] <= value
-            if i == 0:
-                overlap = in_boundary[0]
-            else:
-                overlap = overlap & in_boundary[i]
-        return model_prediction, overlap.float()
+        # in_boundary = [[]] * len(model_prediction)
+        return get_points_mask(model_prediction, self.model_type, self.y_constraints)
 
-    def get_points_mask(self, points_y):
-        in_boundary = [[]] * len(self.y_constraints)
+    # def get_points_mask(self, points_y):
+    #     in_boundary = [[]] * len(self.y_constraints)
 
-        for i, (direction, value) in enumerate(self.y_constraints):
-            if direction == "gt":
-                in_boundary[i] = points_y[i].flatten() >= value
-            else:
-                in_boundary[i] = points_y[i].flatten() <= value
-            if i == 0:
-                overlap = in_boundary[0]
-            else:
-                overlap = overlap & in_boundary[i]
-        return in_boundary, overlap
+    #     for i, (direction, value) in enumerate(self.y_constraints):
+    #         if direction == "gt":
+    #             in_boundary[i] = points_y[i].flatten() >= value
+    #         else:
+    #             in_boundary[i] = points_y[i].flatten() <= value
+    #         if i == 0:
+    #             overlap = in_boundary[0]
+    #         else:
+    #             overlap = overlap & in_boundary[i]
+    #     return in_boundary, overlap
 
     # Logical & for all elements in a list
     def _and_all_elem(self, list_elem):

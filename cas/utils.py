@@ -50,6 +50,42 @@ def identify_samples_which_satisfy_constraints(X, constraints):
     return successful
 
 
+# def check_constraint(val, cons_dir, cons_val):
+#     if cons_dir == "gt":
+#         return val >= cons_val
+#     elif cons_dir == "lt":
+#         return val <= cons_val
+
+
+def get_points_mask(points_y, model_type, constraint=None):
+    in_boundary = torch.empty((points_y.shape[1], points_y.shape[0]))
+    for i, (direction, value) in enumerate(constraint):
+        if model_type[i] == "class":
+            in_boundary[i] = points_y[:, i]
+        elif direction == "gt":
+            in_boundary[i] = points_y[:, i].flatten() >= value
+        elif direction == "lt":
+            in_boundary[i] = points_y[:, i].flatten() <= value
+        in_boundary = in_boundary.bool()
+        if i == 0:
+            overlap = in_boundary[0]
+        else:
+            overlap = overlap & in_boundary[i]
+    return in_boundary, overlap
+
+
+def get_grid(dimension, resolution=20):
+    meshgrid = torch.meshgrid(
+        [torch.linspace(0, 1, resolution) for _ in range(dimension)],
+        indexing="xy",
+    )
+    grid = torch.stack(
+        [torch.reshape(i, (resolution**dimension,)) for i in meshgrid],
+        dim=1,
+    )
+    return grid
+
+
 def get_random_points(bounds, dim, seed=42):
     """Generate random points within the given bounds
 
